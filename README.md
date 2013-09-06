@@ -1,26 +1,66 @@
 gapier
 ======
 
-HTTP server which gives you an API to add and update rows on Google spreadsheet documents easily
+HTTP server which gives you an API to add and update rows on Google spreadsheet documents easily.
+
+PLEASE NOTE TAHT THIS IS NOT YET DONE. THE DOCUMENTATION IS HERE JUST TO ACT AS A SPEC.
 
 # Example
 
+Install gapier to your local machine:
+
     npm install gapier
     
-    // you can also use a fancier browser if you want..
-    lynx -accept\_all\_cookies 'http://localhost:8091/setup'
+Once the server is running, it needs to be set up. Follow the instructions on the setup page. You can also use a fancier browser if you wish :)
+    
+    lynx -accept_all_cookies 'http://localhost:8091/setup'
 
-    curl 'http://localhost:8091/set_row_value' \
-        -d "sheet=GOOGLE_WORKSHEET_ID" \
-        -d "column=diskusage" \
-        --data-urlencode "row="$(hostname) \
-        --data-urlencode "value="$(df|grep '/$'|sed -E 's/.* ([0-9]+%) .*/\1/')
+Once gapier is set up, this would look up the row which has the current machines hostname in it's "Hostname" column and update that rows "Disk usage" column.
+
+    curl 'http://localhost:8091/update_row' \
+        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'match_columns=Hostname'
+        --data-urlencode 'match_values='$(hostname) \
+        --data-urlencode 'set_columns=Disk usage' \
+        --data-urlencode 'set_values='$(df|grep '/$'|sed -E 's/.* ([0-9]+%) .*/\1/')
+
+This would look up a row using two columns and set two values. It would also add the row if it could not be found.
+
+    curl 'http://localhost:8091/add_or_update_row' \
+        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'match_columns=Hostname,Mount point'
+        --data-urlencode 'match_values=testhost.github.com,/mnt/disk' \
+        --data-urlencode 'set_columns=Disk usage, FS type' \
+        --data-urlencode 'set_values=40%,ext4' \
+
+This does the same thing as the previous one but usin JSON is sometimes a bit easier to do from code.
+
+    curl 'http://localhost:8091/add_or_update_row' \
+        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'match_json={ "Hostname": "testhost", "Mount point": "/mnt/disk" }' \
+        --data-urlencode 'set_json={ "Disk usage": "40%", "FS type": "ext4" }'
+
+Sometimes you want to ensure that old or incorrect rows have not creeped in to your document. This makes sure only two rows exist.
+
+    curl 'http://localhost:8091/strip_rows_to' \
+        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'validate_columns=Hostname,Mount point'
+        --data-urlencode 'validate_values=testhost,/mnt/disk' \
+        --data-urlencode 'validate_values=testhost,/'
+
+Naturally this can also be done using the JSON method.
+
+    curl 'http://localhost:8091/strip_rows_to' \
+        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'validate_json=[ { "Hostname": "testhost", "Mount point": "/mnt/disk" }, { "Hostname": "testhost", "Mount point": "/" } ]' \
 
 # Why
 
-Google spreadsheets is one of the most intuitive interfaces to interact with data from various sources. At least when you are already used to it.
+Google spreadsheets is one of the most intuitive interfaces to interact with data from various sources. But putting the data in automatically is usually a lot harder than you would like it to be.
 
 There is Zapier to do this but at least for now it's row update functionality for google apps is missing completely. It also costs money and is not very flexible, error tolerant or verbose in problem situations.
+
+Instead of acting as a simple proxy which sends each update to Google servers, gapier tries to ignore updates that would not lead to state changes and enforce unique key constraints in an environment where it is not natively supported. This allows the programmer to concentrate on more important things than cleaning up duplicate rows or tracking wether something has changed or not.
 
 # How
 
@@ -38,15 +78,15 @@ Making updates to Google documents through code involves two layers of security:
 * You need to create a OAuth2 client to identify your program which does the tasks
 * You need to login in with your own account to authorize your OAuth2 client to make changes on your behalf
 
-The first step leaves you with a OAuth2 client id and the second step leaves you with an OAuth2 refresh token.
+The first step leaves you with a OAuth2 client id and a secret. The second step leaves you with an OAuth2 refresh token.
 
-In theory these two secrets are what allow you to go throught the many steps that result in a valid API call.
+In theory this ID and these two secrets are what allow you to go throught the many steps that result in a valid API call.
 
 The practise however it involves ugly stuff like storing temporary access tokens across multiple program invocations. API access can also sometimes encounter odd things like expired tokens, rate limits on requests and even temporary server outages.
 
 Some people (like me) find it a bit tedious to store these secrets and temporary state files in all the places where I happen to need the simple task of pushing some information to a Google spreadsheet.
 
-The reason gapier was born was to package all that stuff in to a neat container.
+The reason gapier was born was to put all that stuff in to a neat container.
 
 # Security concerns
 
