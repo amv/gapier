@@ -3,7 +3,7 @@ gapier
 
 HTTP server which gives you an API to add and update rows on Google spreadsheet documents easily.
 
-PLEASE NOTE TAHT THIS IS NOT YET DONE. THE DOCUMENTATION IS HERE JUST TO ACT AS A SPEC.
+PLEASE NOTE THAT THIS IS NOT YET DONE. THE DOCUMENTATION IS HERE JUST TO ACT AS A SPEC.
 
 # Example
 
@@ -31,7 +31,7 @@ This would look up a row using two columns and set two values. It would also add
         --data-urlencode 'match_columns=Hostname,Mount point'
         --data-urlencode 'match_values=testhost.github.com,/mnt/disk' \
         --data-urlencode 'set_columns=Disk usage, FS type' \
-        --data-urlencode 'set_values=40%,ext4' \
+        --data-urlencode 'set_values=40%,ext4'
 
 This does the same thing as the previous one but usin JSON is sometimes a bit easier to do from code.
 
@@ -52,7 +52,7 @@ Naturally this can also be done using the JSON method.
 
     curl 'http://localhost:8091/strip_rows_to' \
         --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
-        --data-urlencode 'validate_json=[ { "Hostname": "testhost", "Mount point": "/mnt/disk" }, { "Hostname": "testhost", "Mount point": "/" } ]' \
+        --data-urlencode 'validate_json=[ { "Hostname": "testhost", "Mount point": "/mnt/disk" }, { "Hostname": "testhost", "Mount point": "/" } ]'
 
 # Why
 
