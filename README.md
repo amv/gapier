@@ -62,20 +62,13 @@ There is Zapier to do this but at least for now it's row update functionality fo
 
 Instead of acting as a simple proxy which sends each update to Google servers, gapier tries to ignore updates that would not lead to state changes and enforce unique key constraints in an environment where it is not natively supported. This allows the programmer to concentrate on more important things than cleaning up duplicate rows or tracking wether something has changed or not.
 
-# How
-
-Gapier is a HTTP server which does the following things:
-
-* it allows you to authenticate it to edit google spreadsheet documents for you
-* then it exposes some HTTP POST endpoints which should make your life a bit easier
-
 # Why not just a library
 
 Unfortunately Google does not just allow you to edit stuff with your username and password.
 
 Making updates to Google documents through code involves two layers of security:
 
-* You need to create a OAuth2 client to identify your program which does the tasks
+* You need to create an API project and an OAuth2 client to identify your program which is responsible for the API calls
 * You need to login in with your own account to authorize your OAuth2 client to make changes on your behalf
 
 The first step leaves you with a OAuth2 client id and a secret. The second step leaves you with an OAuth2 refresh token.
@@ -87,6 +80,18 @@ The practise however it involves ugly stuff like storing temporary access tokens
 Some people (like me) find it a bit tedious to store these secrets and temporary state files in all the places where I happen to need the simple task of pushing some information to a Google spreadsheet.
 
 The reason gapier was born was to put all that stuff in to a neat container.
+
+# How step 1: Register Client ID from Google
+
+First register yourself a Google API project at https://code.google.com/apis/console/
+
+After creating a project, you can find a great blue button under "API access" called "Create an OAuth 2.0 client ID". After pressing it, type a random name for your project name and press "Next". From the last configuration page choose the "Web application" and input "localhost" as hostname. Pressing "Create client ID" finishes what you need to do.
+
+You have now created a Client ID! Congratulations! Now take note of the "Client ID" and "Client secret" lines on the newly created Client ID box as they are something you need to input to gapier after installation.
+
+# How step 2: Install gapier
+
+TODO
 
 # Security concerns
 
