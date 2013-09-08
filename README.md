@@ -1,33 +1,29 @@
 gapier
 ======
 
-HTTP server which gives you an API to add and update rows on Google spreadsheet documents easily.
+Google App Engine deployable HTTP server which gives you an API to add, update and trim rows on Google spreadsheets easily.
 
 PLEASE NOTE THAT THIS IS NOT YET DONE. THE DOCUMENTATION IS HERE JUST TO ACT AS A SPEC.
 
-# Example
+# Example usage
 
-Install gapier to your local machine:
+Once the server is running on GAE, it guides you on how to set it up. Just follow the instructions and set up a worksheet token for the following steps:
 
-    npm install gapier
-    
-Once the server is running, it needs to be set up. Follow the instructions on the setup page. You can also use a fancier browser if you wish :)
-    
-    lynx -accept_all_cookies 'http://localhost:8091/setup'
+    lynx -accept_all_cookies 'http://localhost:8091/'
 
 Once gapier is set up, this would look up the row which has the current machines hostname in it's "Hostname" column and update that rows "Disk usage" column.
 
     curl 'http://localhost:8091/update_row' \
-        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
         --data-urlencode 'match_columns=Hostname'
         --data-urlencode 'match_values='$(hostname) \
         --data-urlencode 'set_columns=Disk usage' \
         --data-urlencode 'set_values='$(df|grep '/$'|sed -E 's/.* ([0-9]+%) .*/\1/')
 
-This would look up a row using two columns and set two values. It would also add the row if it could not be found.
+This would look up a row using two columns and set two values. It would also add the row with both match and set values if it could not be found.
 
     curl 'http://localhost:8091/add_or_update_row' \
-        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
         --data-urlencode 'match_columns=Hostname,Mount point'
         --data-urlencode 'match_values=testhost.github.com,/mnt/disk' \
         --data-urlencode 'set_columns=Disk usage, FS type' \
@@ -36,22 +32,22 @@ This would look up a row using two columns and set two values. It would also add
 This does the same thing as the previous one but usin JSON is sometimes a bit easier to do from code.
 
     curl 'http://localhost:8091/add_or_update_row' \
-        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
         --data-urlencode 'match_json={ "Hostname": "testhost", "Mount point": "/mnt/disk" }' \
         --data-urlencode 'set_json={ "Disk usage": "40%", "FS type": "ext4" }'
 
 Sometimes you want to ensure that old or incorrect rows have not creeped in to your document. This makes sure only two rows exist.
 
-    curl 'http://localhost:8091/strip_rows_to' \
-        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+    curl 'http://localhost:8091/trim_rows' \
+        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
         --data-urlencode 'validate_columns=Hostname,Mount point'
         --data-urlencode 'validate_values=testhost,/mnt/disk' \
         --data-urlencode 'validate_values=testhost,/'
 
 Naturally this can also be done using the JSON method.
 
-    curl 'http://localhost:8091/strip_rows_to' \
-        --data-urlencode 'sheet=GOOGLE_WORKSHEET_ID' \
+    curl 'http://localhost:8091/trim_rows' \
+        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
         --data-urlencode 'validate_json=[ { "Hostname": "testhost", "Mount point": "/mnt/disk" }, { "Hostname": "testhost", "Mount point": "/" } ]'
 
 # Why
@@ -64,22 +60,20 @@ Instead of acting as a simple proxy which sends each update to Google servers, g
 
 # Why not just a library
 
-Unfortunately Google does not just allow you to edit stuff with your username and password.
+Google does not just allow you to put your username and password in function parameters and fire API calls on your behalf (the possibility is officially deprecated on April 20, 2012).
 
-Making updates to Google documents through code involves two layers of security:
+Making updates to Google spreadsheets with the suggested OAuth2 authorization involves two layers of security:
 
-* You need to create an API project and an OAuth2 client to identify your program which is responsible for the API calls
-* You need to login in with your own account to authorize your OAuth2 client to make changes on your behalf
+* You need to create a Google API project and an OAuth2 client to identify the programmer which is responsible for the API calls
+* You then need to authorize your OAuth2 client to act on behalf of a user who has the rights to edit the wanted documents, which is done by sending the user to a specially crafted URL with their browser.
 
-The first step leaves you with a OAuth2 client id and a secret. The second step leaves you with an OAuth2 refresh token.
+The first step leaves you with an OAuth2 client id and a secret. The second step leaves you with an OAuth2 refresh token.
 
-In theory this ID and these two secrets are what allow you to go throught the many steps that result in a valid API call.
+In theory this ID, secret and token are what allow you to go throught the many steps that result in a valid API call.
 
-The practise however it involves ugly stuff like storing temporary access tokens across multiple program invocations. API access can also sometimes encounter odd things like expired tokens, rate limits on requests and even temporary server outages.
+The practise however involves ugly stuff like digging worksheet IDs through API calls and storing temporary access tokens across multiple program invocations. API access can also sometimes encounter odd things like expired tokens, rate limits on requests and even temporary server outages which are properly handled only by adding more state and delayed execution logic to your app.
 
-Some people (like me) find it a bit tedious to store these secrets and temporary state files in all the places where I happen to need the simple task of pushing some information to a Google spreadsheet.
-
-The reason gapier was born was to put all that stuff in to a neat container.
+The reason gapier was born was to put all this in to a neat GAE container which at least instructs you on how to proceed when it can not do things for you.
 
 # How step 1: Register Client ID from Google
 
