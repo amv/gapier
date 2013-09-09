@@ -54,7 +54,7 @@ Naturally this can also be done using the JSON method.
 
 Google spreadsheets is one of the most intuitive interfaces to interact with data from various sources. But putting the data in automatically is usually a lot harder than you would like it to be.
 
-There is Zapier to do this but at least for now it's row update functionality for google apps is missing completely. It also costs money and is not very flexible, error tolerant or verbose in problem situations.
+There is Zapier to do this but at least for now it's row update functionality for Google spreadsheets is missing completely. It also costs money and is not very flexible, error tolerant or verbose in problem situations.
 
 Instead of acting as a simple proxy which sends each update to Google servers, gapier tries to ignore updates that would not lead to state changes and enforce unique key constraints in an environment where it is not natively supported. This allows the programmer to concentrate on more important things than cleaning up duplicate rows or tracking wether something has changed or not.
 
@@ -75,24 +75,47 @@ The practise however involves ugly stuff like digging worksheet IDs through API 
 
 The reason gapier was born was to put all this in to a neat GAE container which at least instructs you on how to proceed when it can not do things for you.
 
-# How step 1: Register Client ID from Google
 
-First register yourself a Google API project at https://code.google.com/apis/console/
+# How step 1: Install gapier
 
-After creating a project, you can find a great blue button under "API access" called "Create an OAuth 2.0 client ID". After pressing it, type a random name for your project name and press "Next". From the last configuration page choose the "Web application" and input "localhost" as hostname. Pressing "Create client ID" finishes what you need to do.
+TOOD: checkout gapier from github
+TODO: import project to GAE
+TODO: start gapier from GAE launcher on port 8091 (to stay consistent with these docs)
+TODO: optionally publish project on appspot.com, just remember to change localhosts to your appspot url
 
-You have now created a Client ID! Congratulations! Now take note of the "Client ID" and "Client secret" lines on the newly created Client ID box as they are something you need to input to gapier after installation.
+# How step 2: Register a new Google API project
 
-# How step 2: Install gapier
+TODO: create a project at https://code.google.com/apis/console/
+TODO: under "API access" press "Create an OAuth 2.0 client ID"
+TODO: type a random name for your project name and press "Next"
+TODO: choose the "Web application" and input "localhost" as hostname
+TODO: press "Create client ID" and take note of the "Client ID" and "Client secret" lines on the newly created Client ID box
 
-TODO
+# How step 3: Configure gapier yo use your Google API project
+
+TODO: open browser at http://localhost:8091/
+TODO: input Client ID and Client secret to prompts
+TODO: make sure the url base matches your browser location so that authentication finds back
+
+# How step 4: Link gapier with your Google account
+
+TODO: open browser at http://localhost:8091/
+TODO: Press "connect with google"
+TODO: Grant your API project the rights to modify your spreadsheets
+TODO: Gapier is now tied to your account. Only you can edit the worksheet tokens and spreadsheet changes will be done as "you".
+TODO: if you ever want to change this, you need to remove some objects from GAE data store by hand
+
+# How step 5: Create a worksheet token for an existing Google spreadsheet
+
+TODO: open browser at http://localhost:8091/
+TODO: click "add worksheet token"
+TODO: open the target spreadsheet in an another window and copy&paste the document key from the location bar as instructed
+TODO: pick the sheet from the spreadsheet which you want to edit with this token
+TODO: input an unique worksheet alias which will act as the base of your worksheet token
+TODO: copy the alias:randomchars token to your code to authorize gapier API calls for this sheet
 
 # Security concerns
 
-I would strongly advice you not to expose your service to the internet unless you are sure about some things:
-
-1. You set up a password for gapier
-2. You disabled gapier's network setup
-3. The service can not be accessed without SSL (only using https://)
+I would strongly advice you not to expose your service to the internet unless you are using it through SSL (https:// only).
  
-Gapier also stores your Google account access tokens on the disk as plaintext, so don't let other people read them.
+Gapier also stores your API project secrets, Google account access tokens and worksheet token passwords in the data store as cleartext for your convenience so don't expose any passwords that you are afraid to lose.
