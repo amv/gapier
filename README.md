@@ -60,7 +60,7 @@ Instead of acting as a simple proxy which sends each update to Google servers, g
 
 # Why not just a library
 
-Google does not just allow you to put your username and password in function parameters and fire API calls on your behalf (the possibility is officially deprecated on April 20, 2012).
+Google does not just allow you to put your username and password in function parameters and fire API calls on your behalf (the possibility is officially deprecated on April 20, 2012). And even if it did, you usually do not want to have your full account credentials stored as plain text in files.
 
 Making updates to Google spreadsheets with the suggested OAuth2 authorization involves two layers of security:
 
@@ -69,50 +69,50 @@ Making updates to Google spreadsheets with the suggested OAuth2 authorization in
 
 The first step leaves you with an OAuth2 client id and a secret. The second step leaves you with an OAuth2 refresh token.
 
-In theory this ID, secret and token are what allow you to go throught the many steps that result in a valid API call.
+In theory this ID, secret and token are what allow you to go throught the many steps that result in a valid API call - and these you could store in your deployments.
 
-The practise however involves ugly stuff like digging worksheet IDs through API calls and storing temporary access tokens across multiple program invocations. API access can also sometimes encounter odd things like expired tokens, rate limits on requests and even temporary server outages which are properly handled only by adding more state and delayed execution logic to your app.
+The practise of getting this information however involves ugly stuff like digging worksheet IDs through handcrafted API calls and storing temporary access tokens across multiple program invocations. API access can also sometimes encounter odd things like expired tokens, rate limits on requests and even temporary server outages which are properly handled only by adding more state and delayed execution logic to your app.
 
-The reason gapier was born was to put all this in to a neat GAE container which at least instructs you on how to proceed when it can not do things for you.
+The reason gapier was born was to put all this in to a neat GAE container, which at least instructs you on how to proceed when it can not do things for you. Gapier also gives you spreadsheet specific tokens to store in your deployments instead of having to store credentials that allow accessing all of your spreadsheets.
 
 
 # How step 1: Install gapier
 
-TOOD: checkout gapier from github
-TODO: import project to GAE
-TODO: start gapier from GAE launcher on port 8091 (to stay consistent with these docs)
-TODO: optionally publish project on appspot.com, just remember to change localhosts to your appspot url
+1. TOOD: checkout gapier from github
+2. TODO: import project to GAE
+3. TODO: start gapier from GAE launcher on port 8091 (to stay consistent with these docs)
+4. TODO: optionally publish project on appspot.com, just remember to change localhosts to your appspot url
 
 # How step 2: Register a new Google API project
 
-TODO: create a project at https://code.google.com/apis/console/
-TODO: under "API access" press "Create an OAuth 2.0 client ID"
-TODO: type a random name for your project name and press "Next"
-TODO: choose the "Web application" and input "localhost" as hostname
-TODO: press "Create client ID" and take note of the "Client ID" and "Client secret" lines on the newly created Client ID box
+1. TODO: create a project at https://code.google.com/apis/console/
+2. TODO: under "API access" press "Create an OAuth 2.0 client ID"
+3. TODO: type a random name for your project name and press "Next"
+4. TODO: choose the "Web application" and input "localhost" as hostname
+5. TODO: press "Create client ID" and take note of the "Client ID" and "Client secret" lines on the newly created Client ID box
 
 # How step 3: Configure gapier yo use your Google API project
 
-TODO: open browser at http://localhost:8091/
-TODO: input Client ID and Client secret to prompts
-TODO: make sure the url base matches your browser location so that authentication finds back
+1. TODO: open browser at http://localhost:8091/
+2. TODO: input Client ID and Client secret to prompts
+3. TODO: make sure the url base matches your browser location so that authentication finds back
 
 # How step 4: Link gapier with your Google account
 
-TODO: open browser at http://localhost:8091/
-TODO: Press "connect with google"
-TODO: Grant your API project the rights to modify your spreadsheets
-TODO: Gapier is now tied to your account. Only you can edit the worksheet tokens and spreadsheet changes will be done as "you".
-TODO: if you ever want to change this, you need to remove some objects from GAE data store by hand
+1. TODO: open browser at http://localhost:8091/
+2. TODO: Press "connect with google"
+3. TODO: Grant your API project the rights to modify your spreadsheets
+4. TODO: Gapier is now tied to your account. Only you can edit the worksheet tokens and spreadsheet changes will be done as "you".
+5. TODO: if you ever want to change this, you need to remove some objects from GAE data store by hand
 
 # How step 5: Create a worksheet token for an existing Google spreadsheet
 
-TODO: open browser at http://localhost:8091/
-TODO: click "add worksheet token"
-TODO: open the target spreadsheet in an another window and copy&paste the document key from the location bar as instructed
-TODO: pick the sheet from the spreadsheet which you want to edit with this token
-TODO: input an unique worksheet alias which will act as the base of your worksheet token
-TODO: copy the alias:randomchars token to your code to authorize gapier API calls for this sheet
+1. TODO: open browser at http://localhost:8091/
+2. TODO: click "add worksheet token"
+3. TODO: open the target spreadsheet in an another window and copy&paste the document key from the location bar as instructed
+4. TODO: pick the sheet from the spreadsheet which you want to edit with this token
+5. TODO: input an unique worksheet alias which will act as the base of your worksheet token
+6. TODO: copy the alias:randomchars token to your code to authorize gapier API calls for this sheet
 
 # Security concerns
 
