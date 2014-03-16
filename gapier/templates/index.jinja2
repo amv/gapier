@@ -1,0 +1,18 @@
+<!doctype html>
+<html ng-app="ngGapier">
+<head>
+<script>
+var gapier_variables = {
+    'wrong_user' : '{{wrong_user|e}}',
+    'client_id' : '{{client_id|e}}',
+    'config_user' : '{{config_user|e}}',
+    'config_secret' : '{{config_secret|e}}'
+};
+</script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
+<script src="static/js/app.js"></script>
+</head>
+<body>
+<div ng-controller="GapierCntl"><div ng-view></div></div>
+</body>
+</html>
