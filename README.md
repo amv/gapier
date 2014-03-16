@@ -1,64 +1,134 @@
-gapier
+Gapier
 ======
 
-Google App Engine deployable HTTP server which gives you an API to add, update and trim rows on Google spreadsheets easily.
+Add, update, trim and fetch Google Spreadsheet rows with a limited but easy to use HTTP API that can be deployed to Google App Engine.
 
-PLEASE NOTE THAT THIS IS NOT YET DONE. THE DOCUMENTATION IS HERE JUST TO ACT AS A SPEC.
+PLEASE NOTE THAT THIS IS ALPHA QUALITY:
 
-# Example usage
+ * Most of the views are coder graphics.
+ * The install process does not guide you clearly.
+ * Most of the error situations are unhandled.
+ * There are no automated test.
 
-Once the server is running on GAE, it guides you on how to set it up. Just follow the instructions and set up a worksheet token for the following steps:
+This will hopefully get better over time. At this stage all suggestions on code quality are more than welcome as this is my first real Pyhon project, my first real Google App Engine project and my first real Angular JS project at the same time.
 
-    lynx -accept_all_cookies 'http://localhost:8091/'
+# Quick examples
 
-Once gapier is set up, this would look up the row which has the current machines hostname in it's "Hostname" column and update that rows "Disk usage" column.
+**IMPORTANT NOTE**: The first empty row in a worksheet ends sheet. This is a Google Spreadsheets listfeed feature. So **IF YOU CAN ACCESS ONLY THE BEGINNING OF THE LIST**, make sure you have no empty rows in your worksheet.
 
-    curl 'http://localhost:8091/update_row' \
-        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
-        --data-urlencode 'match_columns=Hostname'
-        --data-urlencode 'match_values='$(hostname) \
+Fetch worksheet rows as a JSON list:
+
+    curl 'https://mygapier.appspot.com/fetch?worksheet_token=your:token'
+
+Add a row to your worksheet with JSON:
+
+    curl 'https://mygapier.appspot.com/add_row' \
+        --data-urlencode 'worksheet_token=your:token' \
+        --data-urlencode 'set_json={"Hostname":"my-machine","Disk usage":"12%"}'
+        
+Do the same with HTTP param interface:
+
+    curl 'https://mygapier.appspot.com/add_row' \
+        --data-urlencode 'worksheet_token=your:token' \
+        --data-urlencode 'set_columns=Hostname,Disk usage' \
+        --data-urlencode 'set_values=my-machine,12%'
+
+Update the existing "my-machine" row. Add the row if it does not exist:
+
+    curl 'https://mygapier.appspot.com/add_or_update_row' \
+        --data-urlencode 'worksheet_token=your:token' \
+        --data-urlencode 'match_json={ "Hostname":"my-machine" }' \
+        --data-urlencode 'set_json={ "Disk usage":"52%" }'
+
+.. and the same update with HTTP param interface:
+
+    curl 'https://mygapier.appspot.com/add_or_update_row' \
+        --data-urlencode 'worksheet_token=your:token' \
+        --data-urlencode 'match_columns=Hostname' \
+        --data-urlencode 'match_values=my-machine' \
         --data-urlencode 'set_columns=Disk usage' \
-        --data-urlencode 'set_values='$(df|grep '/$'|sed -E 's/.* ([0-9]+%) .*/\1/')
+        --data-urlencode 'set_values=52%'
 
-This would look up a row using two columns and set two values. It would also add the row with both match and set values if it could not be found.
+Make sure that only "machine-1" and "machine-2" for user "Me" are the only two rows on the spreadsheet:
 
-    curl 'http://localhost:8091/add_or_update_row' \
-        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
-        --data-urlencode 'match_columns=Hostname,Mount point'
-        --data-urlencode 'match_values=testhost.github.com,/mnt/disk' \
-        --data-urlencode 'set_columns=Disk usage, FS type' \
-        --data-urlencode 'set_values=40%,ext4'
+    curl 'https://mygapier.appspot.com/trim_rows' \
+        --data-urlencode 'worksheet_token=your:token' \
+        --data-urlencode 'validate_set=[{ "Hostname":"machine-1","User":"Me" }, { "Hostname":"machine-2","User":"Me" }]'
+        
+.. and with HTTP params:
 
-This does the same thing as the previous one but usin JSON is sometimes a bit easier to do from code.
+    curl 'https://mygapier.appspot.com/trim_rows' \
+        --data-urlencode 'worksheet_token=your:token' \
+        --data-urlencode 'validate_columns=Hostname,User' \
+        --data-urlencode 'validate_values=machine-1,Me' \
+        --data-urlencode 'validate_values=machine-2,Me'
 
-    curl 'http://localhost:8091/add_or_update_row' \
-        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
-        --data-urlencode 'match_json={ "Hostname": "testhost", "Mount point": "/mnt/disk" }' \
-        --data-urlencode 'set_json={ "Disk usage": "40%", "FS type": "ext4" }'
+# General concepts
 
-Sometimes you want to ensure that old or incorrect rows have not creeped in to your document. This makes sure only two rows exist.
+    TODO: deploying to GAE with expected costs
+    TODO: creating a worsheet token for code deployments
+    TODO: choosing between JSON and HTTP param interfaces
+    TODO: tips on using entry sheets with formula & chart sheets
 
-    curl 'http://localhost:8091/trim_rows' \
-        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
-        --data-urlencode 'validate_columns=Hostname,Mount point'
-        --data-urlencode 'validate_values=testhost,/mnt/disk' \
-        --data-urlencode 'validate_values=testhost,/'
+# Available actions
 
-Naturally this can also be done using the JSON method.
+## /fetch
 
-    curl 'http://localhost:8091/trim_rows' \
-        --data-urlencode 'worksheet_token=WORKSHEET_TOKEN' \
-        --data-urlencode 'validate_json=[ { "Hostname": "testhost", "Mount point": "/mnt/disk" }, { "Hostname": "testhost", "Mount point": "/" } ]'
+Fetches all spreadsheet rows as a list of JSON objects.
+
+The first row defines the object keys and the following rows each show as a separate object.
+
+Accepts worksheet\_token both as GET and POST parameters. 
+
+## /add\_or\_update\_row
+
+Looks up the rows that match the "match" definition. Updates the columns on those rows to match the "set" definition.
+
+If no rows match the "match" definition, inserts a new row with data from both the "match" and the "set" definitions.
+
+Accepts only POST requests. Boths "match" and "set" definitions can be given using either the \_json notation or combining a \_columns and a \_values notation.
+
+## /add\_row
+
+Inserts a new row with data from both the "match" and the "set" definitions unless a row matching the "match" definition already exists.
+
+Either the "match" or the "set" sefinition can be left out. If only the "set" definition is specified, might result in a spreadsheet with multiple rows of the same data.
+
+Accepts only POST requests. Boths "match" and "set" definitions can be given using either the \_json notation or combining a \_columns and a \_values notation.
+
+## /update\_row
+
+Looks up the rows that match the "match" definition. Updates the columns on those rows to match the "set" definition.
+
+Returns 404 if no matching rows were found.
+
+Accepts only POST requests. Boths "match" and "set" definitions can be given using either the \_json notation or combining a \_columns and a \_values notation.
+
+## /delete\_row
+
+Looks up the rows that match the "match" definition. Removes those rows.
+
+Returns 404 if no matching rows were found.
+
+Accepts only POST requests. The "match" definition can be given using either the \_json notation or combining a \_columns and a \_values notation.
+
+## /trim\_rows
+
+Goes through each row of the worksheet. Removes all rows that are not present in the "validate" definition list.
+
+Accepts only POST requests. The "validate" definition can be given using either the \_json notation or combining one \_columns and multiple \_values notations.
 
 # Why
 
-Google spreadsheets is one of the most intuitive interfaces to interact with data from various sources. But putting the data in automatically is usually a lot harder than you would like it to be.
+Google spreadsheets is one of the most intuitive interfaces to interact with data from various sources. However putting the data in automatically is usually a lot harder than you would like it to be.
 
-There is Zapier to do this but at least for now it's row update functionality for Google spreadsheets is missing completely. It also costs money and is not very flexible, error tolerant or verbose in problem situations.
+This project is inspired by Zapier and tries to expand it's limited feature set when dealing with Google Spreadsheets.
 
-Instead of acting as a simple proxy which sends each update to Google servers, gapier tries to ignore updates that would not lead to state changes and enforce unique key constraints in an environment where it is not natively supported. This allows the programmer to concentrate on more important things than cleaning up duplicate rows or tracking wether something has changed or not.
+Instead of acting as a simple proxy which sends each update to Google servers, gapier tries to ignore updates that would not lead to state changes and enforce unique key constraints in an environment where it is not natively supported. This allows the programmer to concentrate on more important things than caching data, cleaning up duplicate rows or tracking wether something has changed or not.
 
-# Why not just a library
+Gapier tries to help with challenges with managing sensitive secrets in code deployments.
+
+## Why not just a library
 
 Google does not just allow you to put your username and password in function parameters and fire API calls on your behalf (the possibility is officially deprecated on April 20, 2012). And even if it did, you usually do not want to have your full account credentials stored as plain text in files.
 
