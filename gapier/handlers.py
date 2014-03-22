@@ -10,10 +10,12 @@ import xmltodict
 import string
 import random
 import urllib
+import logging
 
 from collections import OrderedDict
 
 from oauth2client.client import OAuth2WebServerFlow
+from google.appengine.api import memcache
 
 from gapier import models
 
@@ -469,20 +471,37 @@ def get_flow( info=False ):
             access_type='offline',
             redirect_uri=info.client_url + '/oauth2callback' )
 
-def make_authorized_request( uri, credentials=None, method=None, body=None ):
+def make_authorized_request( uri, credentials=None, method='GET', body=None, timeout=29 ):
     if not credentials:
         credentials = models.CredentialsInfo.get_valid_credentials()
-    if not method:
-        method = 'GET'
 
-    http = httplib2.Http()
+    http = httplib2.Http( timeout=timeout )
     http = credentials.authorize( http )
 
-    if method == 'GET':
-        resp, content = http.request( uri )
-        return content
+    headers = { 'GData-Version' : '3.0' }
 
-    resp, content = http.request( uri, method, body=body, headers={ 'content-type' : 'application/atom+xml' } )
+    if method == 'GET':
+        data = memcache.get( uri )
+
+        if data is not None:
+            headers['If-None-Match'] = data['etag'];
+
+        resp, content = http.request( uri, headers=headers )
+        if resp['status'] == '200':
+            if resp['etag']:
+                memcache.set( uri, { 'etag' : resp['etag'], 'content' : content } )
+            return content
+        elif resp['status'] == '304':
+            return data['content']
+        else:
+            logging.error("Received unexpected return from authorized request. Response and Content to follow:")
+            logging.error( resp )
+            logging.error( content )
+            return ""
+
+    headers['Content-Type'] = 'application/atom+xml'
+
+    resp, content = http.request( uri, method=method, body=body, headers=headers )
 
     return content
 
