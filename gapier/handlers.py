@@ -12,6 +12,7 @@ import random
 import urllib
 import logging
 
+from httplib import HTTPException
 from collections import OrderedDict
 
 from oauth2client.client import OAuth2WebServerFlow
@@ -471,7 +472,23 @@ def get_flow( info=False ):
             access_type='offline',
             redirect_uri=info.client_url + '/oauth2callback' )
 
-def make_authorized_request( uri, credentials=None, method='GET', body=None, timeout=29 ):
+def make_authorized_request( uri, credentials=None, method='GET', body=None ):
+    timeouts = [ 17, 8, 4 ]
+
+    if method == 'POST':
+        timeouts = [ 29 ]
+
+    while timeouts:
+        timeout = timeouts.pop()
+        try:
+            return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout )
+        except HTTPException:
+            logging.info( "An attempt to " +method+ " to " +uri+ " timed out in " +str(timeout)+ " seconds." )
+
+    logging.error("All attempts to " +method+ " to " +uri+ " timed out.")
+    return ""
+
+def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10 ):
     if not credentials:
         credentials = models.CredentialsInfo.get_valid_credentials()
 
