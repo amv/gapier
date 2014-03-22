@@ -137,7 +137,7 @@ class FetchHandler(webapp2.RequestHandler):
             for key in entry.keys():
                 match = re.compile('^gsx\:(.*)$').match( key )
                 if match:
-                    data[ match.group(1) ] = entry[ key ]
+                    data[ match.group(1) ] = str( entry[ key ] or "" )
 
             entries.append( data )
 
@@ -206,7 +206,7 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
 
         for data_list in [ match_data, set_data ]:
             for data in data_list:
-                entry[ data['gsx'] ] = data['value']
+                entry[ data['gsx'] ] = str( data['value'] or "" )
 
         entry_xml = entry_to_utf8_gsx_xml( entry )
 
@@ -224,16 +224,15 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
             for match in set_data:
                 for key in entry.keys():
                     if key == match['gsx']:
-                        if entry[key] != match['value']:
+                        if str( entry[key] or "" ) != str( match['value'] or "" ):
                             needs_update = True
-                        entry[key] = match['value']
+                        entry[key] = str( match['value'] or "" )
                         break
 
             if not needs_update:
                 continue
 
             update_count += 1
-
             for link in entry['link']:
                 if link['@rel'] == 'edit':
                     entry_xml = entry_to_utf8_gsx_xml( entry )
@@ -285,7 +284,7 @@ class TrimRowsHandler(webapp2.RequestHandler):
                     found_match = False
                     for key in entry.keys():
                         if key == match['gsx']:
-                            if entry[key] == match['value']:
+                            if str( entry[key] or "" ) != str( match['value'] or "" ):
                                 found_match = True
                             else:
                                 break
@@ -325,7 +324,7 @@ def find_matching_list_dict_entries_for_data( list_dict, match_data ):
             found_match = False
             for key in entry.keys():
                 if key == match['gsx']:
-                    if entry[key] == match['value']:
+                    if str( entry[key] or "" ) == str( match['value'] or "" ):
                         found_match = True
                     else :
                         break
