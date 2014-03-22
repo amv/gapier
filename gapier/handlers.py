@@ -163,24 +163,29 @@ class RemoveRowHandler(webapp2.RequestHandler):
 
 def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False, remove_mode=False ):
 
-    result = get_match_data_or_error_for_webapp( webapp )
+    if add_mode:
+        allow_empty = True
+    else:
+        allow_empty = False
+
+    result = get_match_data_or_error_for_webapp( webapp, allow_empty )
 
     if 'error' in result:
         return result['error']
 
     match_data = result['data']
 
-    if add_mode or update_mode:
-        if add_mode:
-            allow_empty = True
-        else:
-            allow_empty = None
-        result = get_set_data_or_error_for_webapp( webapp, allow_empty )
+    if update_mode and not add_mode:
+        allow_empty = False
+    else:
+        allow_empty = True
 
-        if 'error' in result:
-            return result['error']
+    result = get_set_data_or_error_for_webapp( webapp, allow_empty )
 
-        set_data = result['data']
+    if 'error' in result:
+        return result['error']
+
+    set_data = result['data']
 
     result = get_worksheet_list_dict_or_error_for_webapp( webapp )
 
@@ -192,7 +197,10 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
     # TODO: 409 Conflict if match_data contains gsx: entries that do not exist in non-empty list_dict
     # TODO: 409 Conflict if set_data contains gsx: entries that do not exist in non-empty list_dict
 
-    found_entries = find_matching_list_dict_entries_for_data( list_dict, match_data )
+    if match_data:
+        found_entries = find_matching_list_dict_entries_for_data( list_dict, match_data )
+    else:
+        found_entries = None
 
     if not found_entries:
         if not add_mode:
@@ -334,8 +342,8 @@ def find_matching_list_dict_entries_for_data( list_dict, match_data ):
 
     return found_entries
 
-def get_match_data_or_error_for_webapp( webapp ):
-    return _get_data_or_error_for_webapp( webapp, 'match' )
+def get_match_data_or_error_for_webapp( webapp, allow_empty ):
+    return _get_data_or_error_for_webapp( webapp, 'match', allow_empty )
 
 def get_set_data_or_error_for_webapp( webapp, allow_empty ):
     return _get_data_or_error_for_webapp( webapp, 'set', allow_empty )
