@@ -101,9 +101,8 @@ function SelectCntl($scope, $routeParams, $http, $rootScope ) {
     $scope.create = function() {
         angular.forEach( $scope.sheets, function( sheet_data ) {
             if ( $scope.selected_title == sheet_data.title ) {
-                $rootScope.alias_data.listfeed_url = sheet_data["http://schemas.google.com/spreadsheets/2006#listfeed"];
+                $rootScope.alias_data.listfeed_url = sheet_data["src"];
             }
-            else {console.log("skipped" + sheet_data["http://schemas.google.com/spreadsheets/2006#listfeed"] )}
         } );
 
         $http.post( '/add_token', $rootScope.alias_data ).

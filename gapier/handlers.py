@@ -102,11 +102,7 @@ class GetDocumentSheetListHandler(webapp2.RequestHandler):
             entries = [ entries ]
         result_data = []
         for entry in entries:
-            entry_data = { 'title' : entry['title']['#text'] }
-
-            for link in entry['link']:
-                entry_data[ link['@rel'] ] = link['@href']
-
+            entry_data = { 'title' : entry['title'], 'src' : entry['content']['@src'] }
             result_data.append( entry_data )
 
         self.response.write(json.dumps(result_data, sort_keys=True, indent=4))
@@ -311,6 +307,7 @@ class TrimRowsHandler(webapp2.RequestHandler):
 def entry_to_utf8_gsx_xml( entry ):
     entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
     entry['@xmlns:gsx'] = 'http://schemas.google.com/spreadsheets/2006/extended'
+    entry['@xmlns:gd'] = "http://schemas.google.com/g/2005"
     entry_dict = OrderedDict([ ( 'entry', entry ) ] )
     xml_entry = xmltodict.unparse( entry_dict )
     return xml_entry.encode('utf-8')
