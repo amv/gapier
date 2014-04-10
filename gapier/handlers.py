@@ -133,7 +133,7 @@ class FetchHandler(webapp2.RequestHandler):
             for key in entry.keys():
                 match = re.compile('^gsx\:(.*)$').match( key )
                 if match:
-                    data[ match.group(1) ] = str( entry[ key ] or "" )
+                    data[ match.group(1) ] = unicode( entry[ key ] or "" )
 
             entries.append( data )
 
@@ -210,7 +210,7 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
 
         for data_list in [ match_data, set_data ]:
             for data in data_list:
-                entry[ data['gsx'] ] = str( data['value'] or "" )
+                entry[ data['gsx'] ] = unicode( data['value'] or "" )
 
         entry_xml = entry_to_utf8_gsx_xml( entry )
 
@@ -228,9 +228,9 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
             for match in set_data:
                 for key in entry.keys():
                     if key == match['gsx']:
-                        if str( entry[key] or "" ) != str( match['value'] or "" ):
+                        if unicode( entry[key] or "" ) != unicode( match['value'] or "" ):
                             needs_update = True
-                        entry[key] = str( match['value'] or "" )
+                        entry[key] = unicode( match['value'] or "" )
                         break
 
             if not needs_update:
@@ -288,7 +288,7 @@ class TrimRowsHandler(webapp2.RequestHandler):
                     found_match = False
                     for key in entry.keys():
                         if key == match['gsx']:
-                            if str( entry[key] or "" ) != str( match['value'] or "" ):
+                            if unicode( entry[key] or "" ) != unicode( match['value'] or "" ):
                                 found_match = True
                             else:
                                 break
@@ -329,7 +329,7 @@ def find_matching_list_dict_entries_for_data( list_dict, match_data ):
             found_match = False
             for key in entry.keys():
                 if key == match['gsx']:
-                    if str( entry[key] or "" ) == str( match['value'] or "" ):
+                    if unicode( entry[key] or "" ) == unicode( match['value'] or "" ):
                         found_match = True
                     else :
                         break
