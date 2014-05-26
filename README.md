@@ -53,7 +53,7 @@ Make sure that only "machine-1" and "machine-2" for user "Me" are the only two r
 
     curl 'https://mygapier.appspot.com/trim_rows' \
         --data-urlencode 'worksheet_token=your:token' \
-        --data-urlencode 'validate_set=[{ "Hostname":"machine-1","User":"Me" }, { "Hostname":"machine-2","User":"Me" }]'
+        --data-urlencode 'validate_json=[{ "Hostname":"machine-1","User":"Me" }, { "Hostname":"machine-2","User":"Me" }]'
         
 .. and with HTTP params:
 
