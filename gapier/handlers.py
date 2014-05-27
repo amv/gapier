@@ -279,29 +279,45 @@ class TrimRowsHandler(webapp2.RequestHandler):
         removed_count = 0
         preserved_count = 0
 
+        signature_types = {}
+        valid_signatures = {}
+
+        for match_data in validate_data:
+            signature_type_parts = []
+            signature_parts = []
+
+            for match in match_data:
+                signature_type_parts.append( match['gsx'] )
+                signature_parts.append( unicode( match['value'] or "" ) )
+
+            signature_type = ':-:!:-:'.join( signature_type_parts )
+            signature = ':-:!:-:'.join( signature_parts )
+
+            if signature_type not in valid_signatures:
+                signature_types[ signature_type ] = signature_type_parts
+                valid_signatures[ signature_type ] = {}
+
+            valid_signatures[ signature_type ][ signature ] = True
+
         for entry in list_dict['feed']['entry']:
-            match_found = False
-            for match_data in validate_data:
-                match_valid = True
+            entry_match_found = False
 
-                for match in match_data:
-                    found_match = False
+            for signature_type in signature_types.keys():
+                signature_type_parts = signature_types[ signature_type ]
+                signature_parts = []
+
+                for gsx in signature_type_parts:
                     for key in entry.keys():
-                        if key == match['gsx']:
-                            if unicode( entry[key] or "" ) != unicode( match['value'] or "" ):
-                                found_match = True
-                            else:
-                                break
+                        if key == gsx:
+                            signature_parts.append( unicode( entry[key] or "" ) )
+                            break
 
-                    if not found_match:
-                        match_valid = False
-                        break
+                signature = ':-:!:-:'.join( signature_parts )
 
-                if match_valid:
-                    match_found = True
-                    break;
+                if signature in valid_signatures[ signature_type ]:
+                    entry_match_found = True
 
-            if not match_found:
+            if not entry_match_found:
                 removed_count += 1
                 for link in entry['link']:
                     if link['@rel'] == 'edit':
