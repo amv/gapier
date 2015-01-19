@@ -3,6 +3,7 @@
 import webapp2
 import jinja2
 import os
+import sys
 import re
 import json
 import httplib2
@@ -11,6 +12,9 @@ import string
 import random
 import urllib
 import logging
+import time
+import zlib
+import pickle
 
 from httplib import HTTPException
 from collections import OrderedDict
@@ -459,10 +463,16 @@ def transform_column_name_to_gsx_compatible_format( name ):
 def get_worksheet_list_dict_or_error_for_webapp( webapp ):
     token = models.WorksheetToken.get_for_token( webapp.request.get('worksheet_token') )
 
+    acceptable_staleness = webapp.request.get('accept_staleness')
+    try:
+        acceptable_staleness = int( acceptable_staleness )
+    except:
+        acceptable_staleness = 0
+
     if not token:
         return { 'error' : custom_error( webapp, 404, 'A valid worksheet_token is required.' ) }
 
-    list_dict = authorized_xml_request_as_dict( token.listfeed_url )
+    list_dict = authorized_xml_request_as_dict( token.listfeed_url, acceptable_staleness=acceptable_staleness )
 
     if not list_dict:
         return { 'error' : webapp.error(500) }
@@ -492,7 +502,7 @@ def get_flow( info=False ):
             access_type='offline',
             redirect_uri=info.client_url + '/oauth2callback' )
 
-def make_authorized_request( uri, credentials=None, method='GET', body=None ):
+def make_authorized_request( uri, credentials=None, method='GET', body=None, acceptable_staleness=0 ):
     timeouts = [ 17, 8, 4 ]
 
     if method == 'POST':
@@ -501,14 +511,14 @@ def make_authorized_request( uri, credentials=None, method='GET', body=None ):
     while timeouts:
         timeout = timeouts.pop()
         try:
-            return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout )
+            return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout, acceptable_staleness=acceptable_staleness )
         except HTTPException:
             logging.info( "An attempt to " +method+ " to " +uri+ " timed out in " +str(timeout)+ " seconds." )
 
     logging.error("All attempts to " +method+ " to " +uri+ " timed out.")
     return ""
 
-def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10 ):
+def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10, acceptable_staleness=0 ):
     if not credentials:
         credentials = models.CredentialsInfo.get_valid_credentials()
 
@@ -518,7 +528,11 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
     headers = { 'GData-Version' : '3.0' }
 
     if method == 'GET':
-        data = memcache.get( uri )
+        data = None
+        compressed_data = memcache.get( uri )
+
+        if compressed_data is not None:
+            data = pickle.loads( zlib.decompress( compressed_data ) )
 
         if data is not None:
             headers['If-None-Match'] = data['etag'];
@@ -526,7 +540,12 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
         resp, content = http.request( uri, headers=headers )
         if resp['status'] == '200':
             if resp['etag']:
-                memcache.set( uri, { 'etag' : resp['etag'], 'content' : content } )
+                try:
+                    memcache.set( uri, zlib.compress( pickle.dumps( { 'etag' : resp['etag'], 'content' : content } ) ) )
+                except:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    logging.error(exc_value)
+
             return content
         elif resp['status'] == '304':
             return data['content']
@@ -542,9 +561,25 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
 
     return content
 
-def authorized_xml_request_as_dict( uri, credentials=None ):
-    content = make_authorized_request( uri, credentials )
-    return xmltodict.parse( content )
+def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=0 ):
+    if acceptable_staleness > 0:
+        data = memcache.get( "dict:" + uri )
+        if data is not None:
+            data = pickle.loads( zlib.decompress( data ) )
+            if time.time() < int( data['gmtime'] ) + acceptable_staleness:
+                return data['content']
+
+    content = make_authorized_request( uri, credentials, acceptable_staleness=acceptable_staleness )
+
+    parsed_content = xmltodict.parse( content )
+
+    try:
+        memcache.set( "dict:" + uri, zlib.compress(pickle.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
+    except:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        logging.error(exc_value)
+
+    return parsed_content
 
 def authorized_json_request_as_dict( uri, credentials=None ):
     content = make_authorized_request( uri, credentials )
