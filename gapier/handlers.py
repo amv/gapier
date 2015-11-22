@@ -53,7 +53,7 @@ class SetClientHandler(webapp2.RequestHandler):
             return self.error(409)
 
         models.ClientInfo.set_new( params['client_id'], params['client_secret'], params['gapier_url'] )
-        self.response.write('ok');
+        output_result_as_json( self, 'ok');
 
 class StartConnectingHandler(webapp2.RequestHandler):
     def get(self):
@@ -80,7 +80,7 @@ class OAuth2CallbackHandler(webapp2.RequestHandler):
             return self.redirect( '/?secret=' + info.config_secret )
 
         else:
-            self.response.write('no code returned :( error was: ' + self.request.get('error') )
+            output_result_as_json( self, 'no code returned :( error was: ' + self.request.get('error') )
 
 class ListTokensHandler(webapp2.RequestHandler):
     def get(self):
@@ -93,7 +93,7 @@ class ListTokensHandler(webapp2.RequestHandler):
             alias_data = { 'token' : alias.get_token() }
             result_data.append( alias_data )
 
-        self.response.write(json.dumps(result_data, sort_keys=True, indent=4))
+        output_as_json( self, result_data )
 
 class GetDocumentSheetListHandler(webapp2.RequestHandler):
     def get(self):
@@ -110,7 +110,7 @@ class GetDocumentSheetListHandler(webapp2.RequestHandler):
             entry_data = { 'title' : entry['title'], 'src' : entry['content']['@src'] }
             result_data.append( entry_data )
 
-        self.response.write(json.dumps(result_data, sort_keys=True, indent=4))
+        output_as_json( self, result_data )
 
 class AddTokenHandler(webapp2.RequestHandler):
     def post(self):
@@ -120,7 +120,7 @@ class AddTokenHandler(webapp2.RequestHandler):
 
         models.WorksheetToken.add( params['alias'], params['listfeed_url'], params['password'] )
 
-        self.response.write('ok');
+        output_result_as_json( self, 'ok');
 
 class FetchHandler(webapp2.RequestHandler):
     def post_and_get(self):
@@ -142,7 +142,7 @@ class FetchHandler(webapp2.RequestHandler):
 
             entries.append( data )
 
-        self.response.write(json.dumps(entries, sort_keys=True, indent=4))
+        output_as_json( self, entries )
 
     def post(self):
         return self.post_and_get()
@@ -151,20 +151,55 @@ class FetchHandler(webapp2.RequestHandler):
         return self.post_and_get()
 
 class UpdateRowHandler(webapp2.RequestHandler):
-    def post(self):
+    def post_and_get(self):
         return generic_add_update_remove_handler( self, update_mode=True );
 
-class AddRowHandler(webapp2.RequestHandler):
     def post(self):
+        return self.post_and_get()
+
+    def get(self):
+        return self.post_and_get()
+
+class AddRowHandler(webapp2.RequestHandler):
+    def post_and_get(self):
         return generic_add_update_remove_handler( self, add_mode=True );
 
-class AddOrUpdateRowHandler(webapp2.RequestHandler):
     def post(self):
+        return self.post_and_get()
+
+    def get(self):
+        return self.post_and_get()
+
+class AddOrUpdateRowHandler(webapp2.RequestHandler):
+    def post_and_get(self):
         return generic_add_update_remove_handler( self, add_mode=True, update_mode=True );
 
-class RemoveRowHandler(webapp2.RequestHandler):
     def post(self):
+        return self.post_and_get()
+
+    def get(self):
+        return self.post_and_get()
+
+class RemoveRowHandler(webapp2.RequestHandler):
+    def post_and_get(self):
         return generic_add_update_remove_handler( self, remove_mode=True );
+
+    def post(self):
+        return self.post_and_get()
+
+    def get(self):
+        return self.post_and_get()
+
+def output_as_json( webapp, data ):
+    if webapp.request.get('callback'):
+        webapp.response.content_type = 'application/javascript'
+        webapp.response.write(webapp.request.get('callback') + '(' + json.dumps(data, sort_keys=True, indent=4) + ');' )
+    else:
+        webapp.response.content_type = 'application/json'
+        webapp.response.write(json.dumps(data, sort_keys=True, indent=4))
+
+def output_result_as_json( webapp, result ):
+    output_as_json( webapp, { 'result' : result } )
 
 def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False, remove_mode=False ):
 
@@ -223,7 +258,7 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
             if link['@rel'] == 'http://schemas.google.com/g/2005#post':
                 make_authorized_request( link['@href'], None, 'POST', entry_xml )
 
-        webapp.response.write( 'DONE: Row was added.')
+        output_result_as_json( webapp, 'DONE: Row was added.')
 
     elif update_mode:
         update_count = 0
@@ -247,7 +282,7 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
                     entry_xml = entry_to_utf8_gsx_xml( entry )
                     make_authorized_request( link['@href'], None, 'PUT', entry_xml )
 
-        webapp.response.write( 'DONE: ' + str( update_count ) + ' of ' + str( len( found_entries ) ) + ' rows required an update.')
+        output_result_as_json( webapp, 'DONE: ' + str( update_count ) + ' of ' + str( len( found_entries ) ) + ' rows required an update.')
 
     elif remove_mode:
         remove_count = 0
@@ -260,7 +295,7 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
                     entry_xml = entry_to_utf8_gsx_xml( entry )
                     make_authorized_request( link['@href'], None, 'DELETE', entry_xml )
 
-        webapp.response.write( 'DONE: ' + str( remove_count ) + ' rows were removed.')
+        output_result_as_json( webapp, 'DONE: ' + str( remove_count ) + ' rows were removed.')
 
     else:
         return custom_error( webapp, 409, 'Matching rows already exist.')
@@ -331,7 +366,7 @@ class TrimRowsHandler(webapp2.RequestHandler):
             else:
                 preserved_count += 1
 
-        self.response.write( 'DONE: ' + str( removed_count ) + ' of ' + str( preserved_count + removed_count ) + ' rows were removed.')
+        output_result_as_json( self, 'DONE: ' + str( removed_count ) + ' of ' + str( preserved_count + removed_count ) + ' rows were removed.')
 
 def entry_to_utf8_gsx_xml( entry ):
     entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
