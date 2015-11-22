@@ -87,6 +87,7 @@ class ListTokensHandler(webapp2.RequestHandler):
         if check_invalid_auth( self ): return
 
         aliases = models.WorksheetToken.get_all()
+        aliases.sort(key=lambda x: x.get_token())
         result_data = []
         for alias in aliases:
             alias_data = { 'token' : alias.get_token() }
