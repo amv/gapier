@@ -610,7 +610,8 @@ def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=
     parsed_content = xmltodict.parse( content )
 
     try:
-        memcache.set( "dict:" + uri, zlib.compress(pickle.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
+        if acceptable_staleness > 0:
+            memcache.set( "dict:" + uri, zlib.compress(pickle.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logging.error(exc_value)
