@@ -1,9 +1,10 @@
 <div>
-    <ul class="unstyled">
-        <li ng-repeat="alias in aliases">
-        <span>{{alias.token}}</span>
-        </li>
-    </ul>
     <p ng-show="aliases.length == 0">Create your first alias from the button below:</p>
     <p>[ <a href="" ng-click="add()">add</a> ]</p>
+    <table>
+        <tr><th>Alias</th><th>Token</th><th>Mode</th></tr>
+        <tr ng-repeat="alias in aliases">
+            <td>{{alias.alias}}</td><td class="tokencover">{{alias.token}}</td><td><span ng-show=alias.access_mode != 'full'> ({{alias.access_mode}})</span></td>
+        </tr>
+    </table>
 </div>

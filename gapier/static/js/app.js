@@ -71,6 +71,7 @@ function SetupClientCntl($scope, $routeParams, $http) {
 function AddCntl($scope, $routeParams, $rootScope ) {
     $scope.name = "AddCntl";
     $scope.params = $routeParams;
+    $scope.alias_data = { access_mode : 'full' };
 
     $scope.select = function() {
         $rootScope.alias_data = $scope.alias_data;

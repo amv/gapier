@@ -68,19 +68,25 @@ class WorksheetToken(ndb.Model):
     alias = ndb.StringProperty(indexed=True)
     listfeed_url = ndb.StringProperty(indexed=False)
     password = ndb.StringProperty(indexed=False)
+    access_mode = ndb.StringProperty(indexed=False)
 
     def get_token(self):
         if self.password:
             return self.alias + ':' + self.password
         return self.alias
 
+    def get_access_mode(self):
+        if self.access_mode:
+            return self.access_mode
+        return 'full'
+
     @classmethod
     def get_all(cls):
         return WorksheetToken.query().fetch(999)
 
     @classmethod
-    def add(cls, alias, listfeed_url, password=''):
-        new = WorksheetToken( parent=GLOBAL_ANCESTOR, alias=alias, listfeed_url=listfeed_url, password=password )
+    def add(cls, alias, listfeed_url, password='', access_mode='full'):
+        new = WorksheetToken( parent=GLOBAL_ANCESTOR, alias=alias, listfeed_url=listfeed_url, password=password, access_mode=access_mode )
         new.put()
 
     @classmethod

@@ -1,0 +1,8 @@
+.tokencover {
+    background: black;
+    color: black !important;
+}
+
+.tokencover:hover {
+    background: white;
+}

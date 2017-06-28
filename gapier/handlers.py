@@ -90,7 +90,7 @@ class ListTokensHandler(webapp2.RequestHandler):
         aliases.sort(key=lambda x: x.get_token())
         result_data = []
         for alias in aliases:
-            alias_data = { 'token' : alias.get_token() }
+            alias_data = { 'token' : alias.get_token(), 'access_mode' : alias.get_access_mode(), 'alias' : alias.alias, 'password' : alias.password }
             result_data.append( alias_data )
 
         output_as_json( self, result_data )
@@ -118,13 +118,13 @@ class AddTokenHandler(webapp2.RequestHandler):
 
         params = json.loads( self.request.body )
 
-        models.WorksheetToken.add( params['alias'], params['listfeed_url'], params['password'] )
+        models.WorksheetToken.add( params['alias'], params['listfeed_url'], params['password'], params['access_mode'] )
 
         output_result_as_json( self, 'ok');
 
 class FetchHandler(webapp2.RequestHandler):
     def post_and_get(self):
-        result = get_worksheet_list_dict_or_error_for_webapp( self )
+        result = get_worksheet_list_dict_or_error_for_webapp( self, required_access_mode='read-only' )
 
         if 'error' in result:
             return result['error']
@@ -496,8 +496,9 @@ def transform_column_name_to_gsx_compatible_format( name ):
     compatible_name = re.compile(r'[^a-z0-9\.\-]*').sub('', compatible_name )
     return compatible_name;
 
-def get_worksheet_list_dict_or_error_for_webapp( webapp ):
+def get_worksheet_list_dict_or_error_for_webapp( webapp, required_access_mode='full' ):
     token = models.WorksheetToken.get_for_token( webapp.request.get('worksheet_token') )
+
 
     acceptable_staleness = webapp.request.get('accept_staleness')
     try:
@@ -507,6 +508,11 @@ def get_worksheet_list_dict_or_error_for_webapp( webapp ):
 
     if not token:
         return { 'error' : custom_error( webapp, 404, 'A valid worksheet_token is required.' ) }
+
+    access_mode = token.get_access_mode();
+    if access_mode != 'full':
+        if required_access_mode != access_mode:
+            return { 'error' : custom_error( webapp, 404, 'A worksheet_token with ' + required_access_mode + ' rights is required. This token has only ' + access_mode + ' rights.'  ) }
 
     list_dict = authorized_xml_request_as_dict( token.listfeed_url, acceptable_staleness=acceptable_staleness )
 
@@ -575,7 +581,7 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
 
         resp, content = http.request( uri, headers=headers )
         if resp['status'] == '200':
-            if resp['etag']:
+            if 'etag' in resp and resp['etag']:
                 try:
                     memcache.set( uri, zlib.compress( pickle.dumps( { 'etag' : resp['etag'], 'content' : content } ) ) )
                 except:
