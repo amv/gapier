@@ -21,6 +21,7 @@ from collections import OrderedDict
 
 from oauth2client.client import OAuth2WebServerFlow
 from google.appengine.api import memcache
+from google.appengine.api import users
 
 from gapier import models
 
@@ -29,15 +30,24 @@ JINJA_ENVIRONMENT = jinja2.Environment( loader=jinja2.FileSystemLoader(os.path.d
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         info = models.ClientInfo.get_latest()
+        user = users.get_current_user()
+        credentials = models.CredentialsInfo.get_latest();
         template_values = {}
-        if info:
-            if info.client_id:
+
+        if user:
+            template_values["config_user"] = user.user_id()
+            template_values["logout_url"] = users.create_logout_url('/')
+            if info:
                 template_values["client_id"] = info.client_id
-            if self.request.get('wrong_user'):
-                template_values["wrong_user"] = self.request.get('wrong_user')
-            if info.config_secret == self.request.get('secret'):
-                template_values["config_secret"] = info.config_secret
-                template_values["config_user"] = info.config_user
+                if credentials:
+                    template_values["credentials"] = 'ok'
+                if user.user_id() != info.config_user:
+                    template_values["wrong_user"] = "Expected user with ID " + info.config_user
+                    template_values["expected_config_user_email"] = info.config_user_email
+        else:
+            template_values["login_url"] = users.create_login_url('/')
+            if info:
+                template_values["expected_config_user_email"] = info.config_user_email
 
         template = JINJA_ENVIRONMENT.get_template('index.jinja2')
         self.response.write(template.render(template_values))
@@ -45,14 +55,15 @@ class MainHandler(webapp2.RequestHandler):
 class SetClientHandler(webapp2.RequestHandler):
     def post(self):
         params = json.loads( self.request.body )
+        user = users.get_current_user()
 
         latest = models.ClientInfo.get_latest()
-        if latest and latest.config_secret:
+        if latest:
             return self.error(403)
         if not params['client_id'] or not params['client_secret'] or not params['gapier_url']:
             return self.error(409)
 
-        models.ClientInfo.set_new( params['client_id'], params['client_secret'], params['gapier_url'] )
+        models.ClientInfo.set_new( params['client_id'], params['client_secret'], params['gapier_url'], user.user_id(), user.email() )
         output_result_as_json( self, 'ok');
 
 class StartConnectingHandler(webapp2.RequestHandler):
@@ -65,19 +76,10 @@ class OAuth2CallbackHandler(webapp2.RequestHandler):
         if code:
             info = models.ClientInfo.get_latest()
             credentials = get_flow( info ).step2_exchange( code )
-            user_info = authorized_json_request_as_dict( 'https://www.googleapis.com/oauth2/v3/userinfo?alt=json', credentials )
-
-            if not info.config_user :
-                info.config_user = user_info["sub"]
-                info.config_secret = ''.join( random.choice( string.ascii_uppercase + string.digits ) for n in range( 32 ) )
-                info.put()
-
-            if not info.config_user == user_info["sub"]:
-                return self.redirect( '/?wrong_user=' + urllib.quote( user_info["name"].encode("utf-8"), '' ) )
 
             models.CredentialsInfo.set_new( credentials )
 
-            return self.redirect( '/?secret=' + info.config_secret )
+            return self.redirect( '/' )
 
         else:
             output_result_as_json( self, 'no code returned :( error was: ' + self.request.get('error') )
@@ -629,15 +631,18 @@ def authorized_json_request_as_dict( uri, credentials=None ):
     return json.loads( content )
 
 def check_invalid_auth( rh, info=False ):
+    user = users.get_current_user()
+    if not user:
+        return rh.error(403)
     if not info:
         info = models.ClientInfo.get_latest()
-    if not rh.request.headers['Authorization']:
+    if not info or not info.config_user:
         return rh.error(403)
-    if rh.request.headers['Authorization'] != info.config_secret:
+    if user.user_id() != info.config_user:
         return rh.error(403)
     return False
+
 
 def custom_error( webapp, code, explanation ):
     webapp.error( code )
     return webapp.response.write( explanation )
-

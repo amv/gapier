@@ -1,2 +1,3 @@
-<h1>You need to connect your Google account to Gapier</h1>
-<p><a href="/start_connecting">Connect!</a></p>
+<h1 ng-show="expects.expected_config_user_email">To access admin area, log in with Google account {{expects.expected_config_user_email}}</h1>
+<h1 ng-hide="expects.expected_config_user_email">Log in with a Google account which will be bound to access the admin area</h1>
+<p><a href="{{urls.login_url}}">Log in!</a></p>

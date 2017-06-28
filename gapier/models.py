@@ -13,12 +13,12 @@ class ClientInfo(ndb.Model):
     client_id = ndb.StringProperty(indexed=False)
     client_secret = ndb.StringProperty(indexed=False)
     client_url = ndb.StringProperty(indexed=False)
-    config_secret = ndb.StringProperty(indexed=False)
     config_user = ndb.StringProperty(indexed=False)
+    config_user_email = ndb.StringProperty(indexed=False)
 
     @classmethod
-    def set_new(cls, client_id, client_secret, client_url ):
-        info = ClientInfo( parent=GLOBAL_ANCESTOR, client_id=client_id, client_secret=client_secret, client_url=client_url, config_user='', config_secret='' )
+    def set_new(cls, client_id, client_secret, client_url, config_user, config_user_email ):
+        info = ClientInfo( parent=GLOBAL_ANCESTOR, client_id=client_id, client_secret=client_secret, client_url=client_url, config_user=config_user, config_user_email=config_user_email )
         info.put();
 
     @classmethod
@@ -111,5 +111,3 @@ class WorksheetToken(ndb.Model):
             return False
 
         return found_object
-
-

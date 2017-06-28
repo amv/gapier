@@ -7,9 +7,17 @@ angular.module('ngGapier', [], function($routeProvider, $locationProvider, $http
         templateUrl: '/static/partials/authenticate.html',
         controller: AuthenticateCntl
     });
+    $routeProvider.when('/wrong_user', {
+        templateUrl: '/static/partials/wrong_user.html',
+        controller: WrongUserCntl
+    });
     $routeProvider.when('/setup_client', {
         templateUrl: '/static/partials/setup_client.html',
         controller: SetupClientCntl
+    });
+    $routeProvider.when('/connect', {
+        templateUrl: '/static/partials/connect.html',
+        controller: ConnectCntl
     });
     $routeProvider.when('/add', {
         templateUrl: '/static/partials/add.html',
@@ -19,7 +27,6 @@ angular.module('ngGapier', [], function($routeProvider, $locationProvider, $http
         templateUrl: '/static/partials/select.html',
         controller: SelectCntl
     });
-    $httpProvider.defaults.headers.common['Authorization'] = gapier_variables['config_secret'];
 });
 
 function GapierCntl($scope, $route, $routeParams, $location, $http ) {
@@ -27,11 +34,17 @@ function GapierCntl($scope, $route, $routeParams, $location, $http ) {
     $scope.$location = $location;
     $scope.$routeParams = $routeParams;
 
-    if ( ! gapier_variables['client_id'] ) {
+    if ( gapier_variables['wrong_user'] ) {
+        $scope.$location.path('/wrong_user')
+    }
+    else if ( gapier_variables['login_url'] ) {
+        $scope.$location.path('/authenticate')
+    }
+    else if ( ! gapier_variables['client_id'] ) {
         $scope.$location.path('/setup_client')
     }
-    else if ( ! gapier_variables['config_secret'] ) {
-        $scope.$location.path('/authenticate')
+    else if ( ! gapier_variables['credentials'] ) {
+        $scope.$location.path('/connect')
     }
     else {
         $scope.$location.path('/list')
@@ -41,6 +54,7 @@ function GapierCntl($scope, $route, $routeParams, $location, $http ) {
 function ListCntl($scope, $routeParams, $http, $location) {
     $scope.name = "ListCntl";
     $scope.params = $routeParams;
+    $scope.urls = { logout_url : gapier_variables['logout_url'] }
     $http.get( '/list_tokens' ).success(function( data ){ $scope.aliases = data })
     $scope.add = function(){
         $location.path('/add')
@@ -50,6 +64,15 @@ function ListCntl($scope, $routeParams, $http, $location) {
 function AuthenticateCntl($scope, $routeParams) {
     $scope.name = "AuthenticateCntl";
     $scope.params = $routeParams;
+    $scope.urls = { login_url : gapier_variables['login_url'] }
+    $scope.expects = { expected_config_user_email : gapier_variables['expected_config_user_email'] }
+}
+
+function WrongUserCntl($scope, $routeParams) {
+    $scope.name = "WrongUserCntl";
+    $scope.params = $routeParams;
+    $scope.urls = { logout_url : gapier_variables['logout_url'] }
+    $scope.expects = { expected_config_user_email : gapier_variables['expected_config_user_email'] }
 }
 
 function SetupClientCntl($scope, $routeParams, $http) {
@@ -63,11 +86,14 @@ function SetupClientCntl($scope, $routeParams, $http) {
     $scope.client_data = { "client_id" : "", "client_secret" : "", "gapier_url" : url };
     $scope.saveData = function() {
         $http.post( '/set_client', $scope.client_data ).
-            success( function() { $scope.$location.path('/authenticate'); } ).
+            success( function() { window.location = '/'; } ).
             error( function() { alert("fail"); } )
     };
 }
-
+function ConnectCntl($scope, $routeParams) {
+    $scope.name = "ConnectCntl";
+    $scope.params = $routeParams;
+}
 function AddCntl($scope, $routeParams, $rootScope ) {
     $scope.name = "AddCntl";
     $scope.params = $routeParams;
@@ -129,4 +155,3 @@ function create_reseting_cancel_to_list_handler( $scope, $rootScope ) {
         $scope.$location.path('/list');
     }
 }
-
