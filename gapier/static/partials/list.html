@@ -4,7 +4,7 @@
     <table ng-hide="aliases.length == 0">
         <tr><th>Token</th><th>Alias</th><th>Mode</th><th>Copy to clipboard</th></tr>
         <tr ng-repeat="alias in aliases">
-            <td class="tokencover">{{alias.token}}</td><td>{{alias.alias}}</td><td>({{alias.access_mode}})</td><td><a href="" ng-click="curl(alias.token)">curl fetch</a> </td>
+            <td class="tokencover">{{alias.token}}</td><td>{{alias.alias}}</td><td>({{alias.access_mode}})</td><td><a href="" ng-click="clip(alias.token)">token</a>, <a href="" ng-click="curl(alias.token)">curl fetch</a></td>
         </tr>
     </table>
 </div>

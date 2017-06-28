@@ -68,6 +68,15 @@ function ListCntl($scope, $routeParams, $http, $location) {
             $temp.remove();
         });
     }
+    $scope.clip = function(token){
+        $(function () {
+            var $temp = $("<input>");
+            $("body").append($temp);
+            $temp.val(token).select();
+            document.execCommand("copy");
+            $temp.remove();
+        });
+    }
 }
 
 function AuthenticateCntl($scope, $routeParams) {
