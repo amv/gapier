@@ -15,6 +15,7 @@ import logging
 import time
 import zlib
 import pickle
+import base64
 
 from httplib import HTTPException
 from collections import OrderedDict
@@ -49,8 +50,10 @@ class MainHandler(webapp2.RequestHandler):
             if info:
                 template_values["expected_config_user_email"] = info.config_user_email
 
+        base64_variables = base64.b64encode(json.dumps(template_values, sort_keys=True, indent=4))
+
         template = JINJA_ENVIRONMENT.get_template('index.jinja2')
-        self.response.write(template.render(template_values))
+        self.response.write(template.render({"base64_variables":base64_variables}))
 
 class SetClientHandler(webapp2.RequestHandler):
     def post(self):

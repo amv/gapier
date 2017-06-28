@@ -2,15 +2,8 @@
 <html ng-app="ngGapier">
 <head>
 <script>
-var gapier_variables = {
-    'wrong_user' : '{{wrong_user|e}}',
-    'client_id' : '{{client_id|e}}',
-    'credentials' : '{{credentials|e}}',
-    'login_url' : '{{login_url|e}}',
-    'logout_url' : '{{logout_url|e}}',
-    'config_user' : '{{config_user|e}}',
-    'expected_config_user_email' : '{{expected_config_user_email|e}}',
-};
+var base64_variables = '{{base64_variables}}';
+var gapier_variables = JSON.parse(atob(base64_variables));
 </script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script>
 <link rel="stylesheet" href="static/css/main.css">
