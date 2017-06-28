@@ -59,6 +59,15 @@ function ListCntl($scope, $routeParams, $http, $location) {
     $scope.add = function(){
         $location.path('/add')
     }
+    $scope.curl = function(token){
+        $(function () {
+            var $temp = $("<input>");
+            $("body").append($temp);
+            $temp.val("curl '" + gapier_variables['client_url'] + "/fetch?worksheet_token="+token+"'").select();
+            document.execCommand("copy");
+            $temp.remove();
+        });
+    }
 }
 
 function AuthenticateCntl($scope, $routeParams) {

@@ -39,6 +39,7 @@ class MainHandler(webapp2.RequestHandler):
             template_values["config_user"] = user.user_id()
             template_values["logout_url"] = users.create_logout_url('/')
             if info:
+                template_values["client_url"] = info.client_url
                 template_values["client_id"] = info.client_id
                 if credentials:
                     template_values["credentials"] = 'ok'

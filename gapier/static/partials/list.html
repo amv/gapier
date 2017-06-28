@@ -2,9 +2,9 @@
     <p ng-show="aliases.length == 0">Create your first alias from the 'add' button below:</p>
     <p>[ <a href="" ng-click="add()">add</a> ] [ <a href="{{urls.logout_url}}">log out</a> ]</p>
     <table ng-hide="aliases.length == 0">
-        <tr><th>Token</th><th>Alias</th><th>Mode</th></tr>
+        <tr><th>Token</th><th>Alias</th><th>Mode</th><th>Copy to clipboard</th></tr>
         <tr ng-repeat="alias in aliases">
-            <td class="tokencover">{{alias.token}}</td><td>{{alias.alias}}</td><td>({{alias.access_mode}})</td>
+            <td class="tokencover">{{alias.token}}</td><td>{{alias.alias}}</td><td>({{alias.access_mode}})</td><td><a href="" ng-click="curl(alias.token)">curl fetch</a> </td>
         </tr>
     </table>
 </div>
