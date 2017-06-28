@@ -6,3 +6,7 @@
 .tokencover:hover {
     background: white;
 }
+
+td {
+    padding: 4px;
+}
