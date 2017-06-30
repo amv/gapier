@@ -1,22 +1,34 @@
 Gapier
 ======
 
-Add, update, trim and fetch Google Spreadsheet rows with a limited but easy to use HTTP API that can be deployed to Google App Engine.
+Gapier gives you a simple HTTP API to modify Google Spreadsheets, with simple tokens as authentication.
 
-PLEASE NOTE THAT THIS IS ALPHA QUALITY:
+One Google Account acts as the admin of the service and can create any number of limited access tokens for different spreadsheets that the user can access.
 
- * Most of the views are coder graphics.
- * The install process does not guide you clearly.
- * Most of the error situations are unhandled.
- * There are no automated test.
+Built to be deployed to Google App Engine Standard and to incur no costs for a vast majority of use cases.
 
-This will hopefully get better over time. At this stage all suggestions on code quality are more than welcome as this is my first real Pyhon project, my first real Google App Engine project and my first real Angular JS project at the same time.
+- [Quick examples](#quick-examples)
+- [Limitations and common pitfalls](#limitations-and-common-pitfalls)
+- [How can I use Gapier?](#how-can-i-use-gapier)
+- [How can I use formulas in my Gapier spreadsheets?](#how-can-i-use-formulas-in-my-gapier-spreadsheets)
+- [How to use Gapier safely directly from a public web page?](#how-to-use-gapier-safely-directly-from-a-public-web-page)
+- [Reference of the available HTTP actions](#reference-of-the-available-http-actions)
+  - [/fetch](#fetch)
+  - [/add\_or\_update\_row](#add_or_update_row)
+  - [/add\_row](#add_row)
+  - [/update\_row](#update_row)
+  - [/delete\_row](#delete_row)
+  - [/trim\_rows](#trim_rows)
+- [Why does Gapier exist?](#why-does-gapier-exist)
+  - [Why a service and not just a library?](#why-a-service-and-not-just-a-library)
+- [Installation](#installation)
+  - [Register and configure a new Google project](#register-and-configure-a-new-google-project)
+  - [Create an App Engine service in the project](#create-an-app-engine-service-in-the-project)
+  - [Configure your Gapier service](#configure-your-gapier-service)
 
 # Quick examples
 
-**IMPORTANT NOTE**: The first empty row in a worksheet ends sheet. This is a Google Spreadsheets listfeed feature. So **IF YOU CAN ACCESS ONLY THE BEGINNING OF THE LIST**, make sure you have no empty rows in your worksheet.
-
-Fetch worksheet rows as a JSON list:
+Fetch worksheet rows as a JSON list of objects:
 
     curl 'https://mygapier.appspot.com/fetch?worksheet_token=your:token'
 
@@ -25,13 +37,26 @@ Add a row to your worksheet with JSON:
     curl 'https://mygapier.appspot.com/add_row' \
         --data-urlencode 'worksheet_token=your:token' \
         --data-urlencode 'set_json={"Hostname":"my-machine","Disk usage":"12%"}'
-        
-Do the same with HTTP param interface:
+
+Add the same row, using the HTTP param interface:
 
     curl 'https://mygapier.appspot.com/add_row' \
         --data-urlencode 'worksheet_token=your:token' \
         --data-urlencode 'set_columns=Hostname,Disk usage' \
         --data-urlencode 'set_values=my-machine,12%'
+
+Add the same row from a web page using JQuery and the JSONP transport (uses HTTP params, but JSON can be used too):
+
+    $.ajax({
+        url: 'https://mygapier.appspot.com/add_row',
+        callback: '?',
+        dataType: 'jsonp',
+        data: {
+            worksheet_token: 'your:token',
+            set_columns: 'Hostname,Disk usage',
+            set_values: 'my-machine,12%'
+        }
+    });
 
 Update the existing "my-machine" row. Add the row if it does not exist:
 
@@ -54,7 +79,7 @@ Make sure that only "machine-1" and "machine-2" for user "Me" are the only two r
     curl 'https://mygapier.appspot.com/trim_rows' \
         --data-urlencode 'worksheet_token=your:token' \
         --data-urlencode 'validate_json=[{ "Hostname":"machine-1","User":"Me" }, { "Hostname":"machine-2","User":"Me" }]'
-        
+
 .. and with HTTP params:
 
     curl 'https://mygapier.appspot.com/trim_rows' \
@@ -63,14 +88,49 @@ Make sure that only "machine-1" and "machine-2" for user "Me" are the only two r
         --data-urlencode 'validate_values=machine-1,Me' \
         --data-urlencode 'validate_values=machine-2,Me'
 
-# General concepts
+# Limitations and common pitfalls
 
-    TODO: deploying to GAE with expected costs
-    TODO: creating a worsheet token for code deployments
-    TODO: choosing between JSON and HTTP param interfaces
-    TODO: tips on using entry sheets with formula & chart sheets
+ 1. **NO FORMULAS** can be read or written because Gapier uses the Listfeed API. However, [you can work around this easily](#how-can-i-use-formulas-in-my-gapier-spreadsheets).
+ 2. **NO EMPTY ROWS** because rows after the first one are not visible to Gapier. This too is a Listfeed API "feature".
+ 3. No tests yet, so there are probably bugs :(
 
-# Available actions
+# How can I use Gapier?
+
+One of the design goals of Gapier is that you do NOT need to have your own servers or pay maintenance fees for someone hosting Gapier for you on their servers.
+
+That being said, you do need to have your own version of the Gapier service installed "somewhere" for you to use it. The intended "somewhere" is to use the Google Cloud free tier infrastructure (App Engine) to run Gapier for you. The "Installation" -section at the end of this document offers an easy to follow step by step guide for achieving just this.
+
+# How can I use formulas in my Gapier spreadsheets?
+
+Model your spreadsheet so that they have separate sheets for dynamic data and separate sheets for formulas. Then you use Gapier to update your dynamic sheets, import the data from one or several dynamic sheets to certain formula sheet columns, and create your formulas by hand in other columns.
+
+You have several options to copy your dynamic sheet data to your formula sheets, but here are the most common ones:
+
+    ={'Sheet1'!A:A}
+    ={'Sheet1'!A:C}
+
+    =FILTER('Sheet1'!A:A,{TRUE})
+    =FILTER('Sheet1'!A:C,{TRUE,TRUE,TRUE})
+
+    =QUERY(Sheet1!A:A,"select A")
+    =QUERY(Sheet1!A:C,"select A,B,C")
+
+You should look at the documentation of `=FILTER` and `=QUERY` if you want to visualize or process only parts of your dynamic data.
+
+# How to use Gapier safely directly from a public web page?
+
+Gapier ships with a JSONP transport, which means that any web page which has the access token can interact with the token's spreadsheet through Gapier.
+
+Using a token with full read & write access to a spreadsheet from a public website is however often not something you want to do. What you usually would want to do instead is one of the following:
+
+ * Use a **read-only token** to display data on your website that is authored manually through the spreadsheet.
+ * Use a **add-only token** to allow users to submit a form and add the form data to a new row in the spreadsheet for later processing.
+ * Combine the multiple instances of the two above with some magic formula for processing :)
+ * Just use a **full access token** if your website is an otherwise protected internal tool or a prototype with friendly users.
+
+Currently Gapier does not yet allow limiting the "origin" of the requests, so that access would be possible only from websites on specified domains, but this is a planned future feature.
+
+# Reference of the available HTTP actions
 
 ## /fetch
 
@@ -78,7 +138,7 @@ Fetches all spreadsheet rows as a list of JSON objects.
 
 The first row defines the object keys and the following rows each show as a separate object.
 
-Accepts worksheet\_token both as GET and POST parameters. 
+Accepts worksheet\_token both as GET and POST parameters.
 
 ## /add\_or\_update\_row
 
@@ -118,74 +178,67 @@ Goes through each row of the worksheet. Removes all rows that are not present in
 
 Accepts only POST requests. The "validate" definition can be given using either the \_json notation or combining one \_columns and multiple \_values notations.
 
-# Why
+# Why does Gapier exist?
 
-Google spreadsheets is one of the most intuitive interfaces to interact with data from various sources. However putting the data in automatically is usually a lot harder than you would like it to be.
+Spreadsheets (Google or otherwise) are one of the most intuitive and flexible interfaces to interact with data from various sources. However putting the data in spreadsheets automatically is usually a lot harder than one would like it to be.
 
-This project is inspired by Zapier and tries to expand it's limited feature set when dealing with Google Spreadsheets.
+Gapier exists to make this process as easy as possible from any source that can send simple HTTP requests.
 
-Instead of acting as a simple proxy which sends each update to Google servers, gapier tries to ignore updates that would not lead to state changes and enforce unique key constraints in an environment where it is not natively supported. This allows the programmer to concentrate on more important things than caching data, cleaning up duplicate rows or tracking wether something has changed or not.
+To achieve this goal, Gapier does 2 main things:
 
-Gapier tries to help with challenges with managing sensitive secrets in code deployments.
+ * Gapier manages your sensitive secrets and **gives you simple tokens with limited access rights** that you can safely deploy to servers or websites.
+ * Gapier exposes a simple HTTP API that **allows easily adding and updating rows** without doing row matching yourself.
 
-## Why not just a library
+This project was originally inspired by Zapier and tried to expand it's limited feature set when dealing with Google Spreadsheets. If you are a fan of Zapier, you will find that Gapier should be easy to use through the custom code steps with the `request` library.
 
-Google does not just allow you to put your username and password in function parameters and fire API calls on your behalf (the possibility is officially deprecated on April 20, 2012). And even if it did, you usually do not want to have your full account credentials stored as plain text in files.
+## Why a service and not just a library?
 
-Making updates to Google spreadsheets with the suggested OAuth2 authorization involves two layers of security:
+The service approach yields benefits for security, latency and ease of deployment.
 
-* You need to create a Google API project and an OAuth2 client to identify the programmer which is responsible for the API calls
-* You then need to authorize your OAuth2 client to act on behalf of a user who has the rights to edit the wanted documents, which is done by sending the user to a specially crafted URL with their browser.
+Security: A service which holds a small amount of state can greatly ease the management of the various OAuth2 secrets that are involved in modifying a Google spreadsheet. By storing these delicate secrets in the same domain as the spreadsheets themselves (in the Google infrastructure), and giving out only very limited access tokens, many attack vectors are simply eliminated, and incident surfaces diminished greatly.
 
-The first step leaves you with an OAuth2 client id and a secret. The second step leaves you with an OAuth2 refresh token.
+Latency: Many convenient update operations on a spreadsheet require accessing and processing the whole spreadsheet. When this is done in the Google infrastructure instead of transporting the data to the "edges" for libraries to process, processing latencies can be greatly reduced. Latencies also apply to token renewals, which can be either eliminated by mostly reusing tokens cached across clients, or diminished by locality within the Google infrastructure.
 
-In theory this ID, secret and token are what allow you to go throught the many steps that result in a valid API call - and these you could store in your deployments.
+Ease of deployment: Exposing the service through HTTP allows deploying spreadsheets altering logic to very limited environments, like software macros or embedded function as a service tools. Also the amount of deployed configuration needed to access the service with a single token is much smaller and simpler than what would be needed to properly configure a library which uses OAuth2.
 
-The practise of getting this information however involves ugly stuff like digging worksheet IDs through handcrafted API calls and storing temporary access tokens across multiple program invocations. API access can also sometimes encounter odd things like expired tokens, rate limits on requests and even temporary server outages which are properly handled only by adding more state and delayed execution logic to your app.
+While Gapier does not yet support it, it would also be possible to extend the service approach to add deferred logic to handle situations like rate limiting errors and intermittent partial service outages. But even without these features in place, the service approach allows maintainers better visibility to the potential problems in the system through the Google App Engine logs, independent of the capabilities offered by the edge clients that would use libraries.
 
-The reason gapier was born was to put all this in to a neat GAE container, which at least instructs you on how to proceed when it can not do things for you. Gapier also gives you spreadsheet specific tokens to store in your deployments instead of having to store credentials that allow accessing all of your spreadsheets.
+# Installation
 
+## Register and configure a new Google project
 
-# How step 1: Install gapier
+1. You probably need a Google Account :)
+2. Create a project at https://console.developers.google.com/cloud-resource-manager
+3. Pick an unique name like "myorg-myname-gapier" and take note of the project ID from the gray "Your project ID will be myorg-myname-gapier" text that appears.
+4. Select your new project and then pick "API Manager" from the console main menu.
+5. Enter the "Library" section, search for the API called "Google Calendar API" and "Enable" it.
+6. Enter the "Credentials" section enter the "OAuth2 consent screen" area.
+7. Set a fancy name (like "Gapier") as the "Product name" and save your settings.
+8. Enter the "Credentials" area and create "OAuth client ID" credentials.
+9. Pick "Web application" type and fill in the "Authorized redirect URIs" field with. "https://myorg-myname-gapier.appspot.com/oauth2callback".
+10. Make sure the first part of the domain matches your project ID from step 3 and click "Create".
+11. Copy and store both the Client ID and the Client secret for the credentials you just created.
 
-1. TOOD: checkout gapier from github
-2. TODO: import project to GAE
-3. TODO: start gapier from GAE launcher on port 8091 (to stay consistent with these docs)
-4. TODO: optionally publish project on appspot.com, just remember to change localhosts to your appspot url
+## Create an App Engine service in the project
 
-# How step 2: Register a new Google API project
+1. Select "GOOGLE CLOUD PLATFORM" from the bottom of the console main menu.
+2. Pick "App Engine" From the cloud console main menu.
+3. Create "Your first app" by choosing "Python" as your language.
+4. Select the region closest to you, click "Next" and wait for the initialization to complete.
+5. Follow a few steps of the tutorial until you get a black cloud console at the bottom of your browser.
+6. Click "Cancel Tutorial" and input the following commands to your cloud console:
 
-1. TODO: create a project at https://code.google.com/apis/console/
-2. TODO: under "API access" press "Create an OAuth 2.0 client ID"
-3. TODO: type a random name for your project name and press "Next"
-4. TODO: choose the "Web application" and input "localhost" as hostname
-5. TODO: press "Create client ID" and take note of the "Client ID" and "Client secret" lines on the newly created Client ID box
+    git clone https://github.com/amv/gapier ~/gapier
+    cd gapier
+    gcloud datastore create-indexes index.yaml
+    gcloud app deploy app.yaml
 
-# How step 3: Configure gapier yo use your Google API project
+7. The two last commands need you to answer "Y", but after that your service should be running.
 
-1. TODO: open browser at http://localhost:8091/
-2. TODO: input Client ID and Client secret to prompts
-3. TODO: make sure the url base matches your browser location so that authentication finds back
+## Configure your Gapier service
 
-# How step 4: Link gapier with your Google account
-
-1. TODO: open browser at http://localhost:8091/
-2. TODO: Press "connect with google"
-3. TODO: Grant your API project the rights to modify your spreadsheets
-4. TODO: Gapier is now tied to your account. Only you can edit the worksheet tokens and spreadsheet changes will be done as "you".
-5. TODO: if you ever want to change this, you need to remove some objects from GAE data store by hand
-
-# How step 5: Create a worksheet token for an existing Google spreadsheet
-
-1. TODO: open browser at http://localhost:8091/
-2. TODO: click "add worksheet token"
-3. TODO: open the target spreadsheet in an another window and copy&paste the document key from the location bar as instructed
-4. TODO: pick the sheet from the spreadsheet which you want to edit with this token
-5. TODO: input an unique worksheet alias which will act as the base of your worksheet token
-6. TODO: copy the alias:randomchars token to your code to authorize gapier API calls for this sheet
-
-# Security concerns
-
-I would strongly advice you not to expose your service to the internet unless you are using it through SSL (https:// only).
- 
-Gapier also stores your API project secrets, Google account access tokens and worksheet token passwords in the data store as cleartext for your convenience so don't expose any passwords that you are afraid to lose.
+1. First open your browser at "https://myorg-myname-gapier.appspot.com/". If you see an error, please wait for a while for the index to be created and reload the page.
+2. Click "Log in!". Gapier administration will be permanently bound to the first user who logs in, and no other users can manage the tokens.
+2. Gapier should now ask you for the Client ID and Client secret of the API Credentials you created earlier. The domain should be pre-filled correctly.
+3. After storing the credentials, Gapier will guide you to allow it to access to spreadsheets on behalf of some user.
+4. After granting access to spreadsheets, you should be able to start adding spreadsheet tokens!
