@@ -558,7 +558,7 @@ def get_flow( info=False ):
             access_type='offline',
             redirect_uri=info.client_url + '/oauth2callback' )
 
-def make_authorized_request( uri, credentials=None, method='GET', body=None, acceptable_staleness=0 ):
+def make_authorized_request( uri, credentials=None, method='GET', body=None ):
     timeouts = [ 17, 8, 4 ]
 
     if method == 'POST':
@@ -567,14 +567,14 @@ def make_authorized_request( uri, credentials=None, method='GET', body=None, acc
     while timeouts:
         timeout = timeouts.pop()
         try:
-            return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout, acceptable_staleness=acceptable_staleness )
+            return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout )
         except HTTPException:
             logging.info( "An attempt to " +method+ " to " +uri+ " timed out in " +str(timeout)+ " seconds." )
 
     logging.error("All attempts to " +method+ " to " +uri+ " timed out.")
     return ""
 
-def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10, acceptable_staleness=0 ):
+def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10 ):
     if not credentials:
         credentials = models.CredentialsInfo.get_valid_credentials()
 
@@ -625,7 +625,7 @@ def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=
             if time.time() < int( data['gmtime'] ) + acceptable_staleness:
                 return data['content']
 
-    content = make_authorized_request( uri, credentials, acceptable_staleness=acceptable_staleness )
+    content = make_authorized_request( uri, credentials )
 
     parsed_content = xmltodict.parse( content )
 
