@@ -2,7 +2,7 @@
 <form ng-submit="add()">
 <p>Alias: <input type="text" ng-model="alias_data.alias" placeholder="Enter a name for the alias" /></p>
 <p>Secret: <input type="text" ng-model="alias_data.password" placeholder="No secret" /></p>
-<p>Access mode: <select ng-model="alias_data.access_mode"><option value="full">full</option><option value="read-only">read-only</option></select></p>
+<p>Access mode: <select ng-model="alias_data.access_mode"><option value="full">full</option><option value="read-only">read-only</option><option value="add-only">add-only</option></select></p>
 
 <p><input class="btn-primary" type="submit" value="Add" /> <input class="btn-primary" ng-click="cancel()" type="button" value="Cancel" /><p>
 </form>
