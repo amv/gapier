@@ -15,6 +15,7 @@ app = webapp2.WSGIApplication([
     ('/start_connecting', handlers.StartConnectingHandler),
     ('/oauth2callback', handlers.OAuth2CallbackHandler),
     ('/list_tokens', handlers.ListTokensHandler),
+    ('/get_document_list', handlers.GetDocumentListHandler),
     ('/get_document_sheet_list', handlers.GetDocumentSheetListHandler),
     ('/add_token', handlers.AddTokenHandler),
 
@@ -28,4 +29,3 @@ app = webapp2.WSGIApplication([
     ('/trim_rows', handlers.TrimRowsHandler),
 
 ], debug=True)
-

@@ -101,6 +101,14 @@ class ListTokensHandler(webapp2.RequestHandler):
 
         output_as_json( self, result_data )
 
+class GetDocumentListHandler(webapp2.RequestHandler):
+    def get(self):
+        if check_invalid_auth( self ): return
+
+        document_data = authorized_xml_request_as_dict( 'https://spreadsheets.google.com/feeds/spreadsheets/private/full?max-results=50' )
+
+        output_as_json( self, document_data )
+
 class GetDocumentSheetListHandler(webapp2.RequestHandler):
     def get(self):
         if check_invalid_auth( self ): return

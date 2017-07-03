@@ -117,16 +117,24 @@ function ConnectCntl($scope, $routeParams) {
     $scope.params = $routeParams;
 }
 
-function AddChooseDocumentCntl($scope, $routeParams, $rootScope ) {
+function AddChooseDocumentCntl($scope, $routeParams, $http, $rootScope ) {
     $scope.name = "AddChooseDocumentCntl";
     $scope.params = $routeParams;
     $rootScope.alias_data = {};
 
-    $scope.choose = function() {
-        if ( $scope.alias_data.spreadsheet_key_or_url ) {
-            var keymatch = $scope.alias_data.spreadsheet_key_or_url.match(/([a-zA-Z0-9\-_]{30,80})/);
+    $http.get( '/get_document_list' ).
+        success(function( data ){
+            $scope.documents = data.feed.entry;
+        } ).
+        error( function() {
+            alert("failed fetching.. maybe reload and try again?");
+        } );
+
+    $scope.choose = function( key_or_url ) {
+        if ( key_or_url ) {
+            var keymatch = key_or_url.match(/([a-zA-Z0-9\-_]{20,80})/);
             if ( ! keymatch[1] ) {
-                return alert($scope.alias_data.spreadsheet_key_or_url + ' does not look like a proper key or a document url which would contain the key!')
+                return alert( key_or_url + ' does not look like a proper key or a document url which would contain the key!')
             }
             $rootScope.alias_data.spreadsheet_key = keymatch[1];
             $scope.$location.path('/add_select_sheet');
