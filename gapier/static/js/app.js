@@ -19,13 +19,17 @@ angular.module('ngGapier', [], function($routeProvider, $locationProvider, $http
         templateUrl: '/static/partials/connect.html',
         controller: ConnectCntl
     });
+    $routeProvider.when('/add_choose_document', {
+        templateUrl: '/static/partials/add_choose_document.html',
+        controller: AddChooseDocumentCntl
+    });
+    $routeProvider.when('/add_select_sheet', {
+        templateUrl: '/static/partials/add_select_sheet.html',
+        controller: AddSelectSheetCntl
+    });
     $routeProvider.when('/add', {
         templateUrl: '/static/partials/add.html',
         controller: AddCntl
-    });
-    $routeProvider.when('/select', {
-        templateUrl: '/static/partials/select.html',
-        controller: SelectCntl
     });
 });
 
@@ -57,7 +61,7 @@ function ListCntl($scope, $routeParams, $http, $location) {
     $scope.urls = { logout_url : gapier_variables['logout_url'] }
     $http.get( '/list_tokens' ).success(function( data ){ $scope.aliases = data })
     $scope.add = function(){
-        $location.path('/add')
+        $location.path('/add_choose_document')
     }
     $scope.curl = function(token){
         $(function () {
@@ -112,43 +116,69 @@ function ConnectCntl($scope, $routeParams) {
     $scope.name = "ConnectCntl";
     $scope.params = $routeParams;
 }
-function AddCntl($scope, $routeParams, $rootScope ) {
-    $scope.name = "AddCntl";
+
+function AddChooseDocumentCntl($scope, $routeParams, $rootScope ) {
+    $scope.name = "AddChooseDocumentCntl";
     $scope.params = $routeParams;
-    $scope.alias_data = { access_mode : 'full' };
+    $rootScope.alias_data = {};
 
-    $scope.select = function() {
-        $rootScope.alias_data = $scope.alias_data;
-
-        var charmap = "abcdefghijklmnopqrstuvwxyz";
-        var password = '';
-        for ( var i = 0; i < 16; i++ ) {
-            password += charmap.charAt( Math.floor( Math.random() * charmap.length) );
+    $scope.choose = function() {
+        if ( $scope.alias_data.spreadsheet_key_or_url ) {
+            var keymatch = $scope.alias_data.spreadsheet_key_or_url.match(/([a-zA-Z0-9\-_]{30,80})/);
+            if ( ! keymatch[1] ) {
+                return alert($scope.alias_data.spreadsheet_key_or_url + ' does not look like a proper key or a document url which would contain the key!')
+            }
+            $rootScope.alias_data.spreadsheet_key = keymatch[1];
+            $scope.$location.path('/add_select_sheet');
         }
-        $rootScope.alias_data.password = password;
-
-        $scope.$location.path('/select');
-    };
-
+    }
     $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope );
 }
 
-function SelectCntl($scope, $routeParams, $http, $rootScope ) {
-    $scope.name = "SelectCntl";
+function AddSelectSheetCntl($scope, $routeParams, $http, $rootScope ) {
+    $scope.name = "AddSelectSheetCntl";
     $scope.params = $routeParams;
 
     $http.get( '/get_document_sheet_list', { params : { spreadsheet_key : $rootScope.alias_data.spreadsheet_key } } ).
         success(function( data ){
             $scope.sheets = data;
             $scope.selected_title = data[0].title;
+        } ).
+        error( function() {
+            alert("failed fetching.. maybe reload and try again?");
         } );
 
-    $scope.create = function() {
+    $scope.select = function() {
         angular.forEach( $scope.sheets, function( sheet_data ) {
             if ( $scope.selected_title == sheet_data.title ) {
                 $rootScope.alias_data.listfeed_url = sheet_data["src"];
             }
         } );
+        $scope.$location.path('/add');
+    };
+    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope );
+}
+
+function AddCntl($scope, $routeParams, $http, $rootScope ) {
+    $scope.name = "AddCntl";
+    $scope.params = $routeParams;
+    $scope.alias_data = { access_mode : 'full' };
+
+    var charmap = "abcdefghijklmnopqrstuvwxyz";
+    var password = '';
+    for ( var i = 0; i < 16; i++ ) {
+        password += charmap.charAt( Math.floor( Math.random() * charmap.length) );
+    }
+    $scope.alias_data.password = password;
+
+    $scope.add = function() {
+        if ( ! $scope.alias_data.alias ) {
+            return alert( 'Alias needs to be specified.')
+        }
+
+        $rootScope.alias_data.alias = $scope.alias_data.alias;
+        $rootScope.alias_data.access_mode = $scope.alias_data.access_mode;
+        $rootScope.alias_data.password = $scope.alias_data.password;
 
         $http.post( '/add_token', $rootScope.alias_data ).
             success( function() {

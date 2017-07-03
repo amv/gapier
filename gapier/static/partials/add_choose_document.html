@@ -1,0 +1,10 @@
+<h1>Which spreadsheet do you want to acccess?</h1>
+<form ng-submit="choose()">
+    <div>
+        <p>Specify spreadsheet: <input type="text" ng-model="alias_data.spreadsheet_key_or_url" placeholder="Enter the spreadsheet key or full url" ></p>
+<!--
+        <p>.. or choose one from your recent list:</p>
+-->
+        <p><input class="btn-primary" type="submit" value="Continue" /><input class="btn-primary" ng-click="cancel()" type="button" value="Cancel" /><p>
+    </div>
+</form>

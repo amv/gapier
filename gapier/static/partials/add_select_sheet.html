@@ -1,0 +1,11 @@
+<h1>Select which sheet to use from the spreadsheet:</h1>
+<form ng-submit="select()">
+    <div>
+        <p ng-hide="sheets.length > 0">Fetching sheets, please wait...</p>
+        <label data-ng-repeat="sheet in sheets" >
+            <input type="radio" name="sheet_title" ng-model="$parent.selected_title" value="{{sheet.title}}" />{{sheet.title}}
+            <br/>
+        </label>
+        <p><input class="btn-primary" type="submit" value="Select sheet" /><input class="btn-primary" ng-click="cancel()" type="button" value="Cancel" /><p>
+    </div>
+</form>
