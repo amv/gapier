@@ -92,10 +92,16 @@ class WorksheetToken(ndb.Model):
     @classmethod
     def get_for_token(cls, token):
         parts = string.split( token, ':' )
-        if len(parts) < 2:
+
+        if len(parts) < 1:
             return False
-        find_alias = parts[0]
-        match_password = parts[1]
+
+        if len(parts) < 2:
+            find_alias = parts[0]
+            match_password=''
+        else:
+            find_alias = parts[0]
+            match_password = parts[1]
 
         if not find_alias:
             return False
@@ -106,7 +112,7 @@ class WorksheetToken(ndb.Model):
             logging.debug('alias not found')
             return False
 
-        if not found_object.password == match_password:
+        if found_object.password and not found_object.password == match_password:
             logging.debug('password mismatch')
             return False
 
