@@ -132,7 +132,7 @@ class AddTokenHandler(webapp2.RequestHandler):
 
         params = json.loads( self.request.body )
 
-        models.WorksheetToken.add( params['alias'], params['listfeed_url'], params['password'], params['access_mode'] )
+        models.WorksheetToken.add( params['alias'], params['listfeed_url'], params['spreadsheet_key'], params['password'], params['access_mode'] )
 
         output_result_as_json( self, 'ok');
 
@@ -147,10 +147,15 @@ class FetchHandler(webapp2.RequestHandler):
 
         entries = []
 
+        if not 'feed' in list_dict or not 'entry' in list_dict['feed']:
+            return output_as_json( self, entries )
+
+        namere = re.compile('^gsx\:(.*)$')
+
         for entry in list_dict['feed']['entry']:
             data = {}
             for key in entry.keys():
-                match = re.compile('^gsx\:(.*)$').match( key )
+                match = namere.match( key )
                 if match:
                     data[ match.group(1) ] = unicode( entry[ key ] or "" )
 

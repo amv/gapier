@@ -66,6 +66,7 @@ class CredentialsInfo(ndb.Model):
 class WorksheetToken(ndb.Model):
     created_date = ndb.DateTimeProperty(auto_now_add=True)
     alias = ndb.StringProperty(indexed=True)
+    spreadsheet_key = ndb.StringProperty(indexed=False)
     listfeed_url = ndb.StringProperty(indexed=False)
     password = ndb.StringProperty(indexed=False)
     access_mode = ndb.StringProperty(indexed=False)
@@ -85,8 +86,8 @@ class WorksheetToken(ndb.Model):
         return WorksheetToken.query().fetch(999)
 
     @classmethod
-    def add(cls, alias, listfeed_url, password='', access_mode='full'):
-        new = WorksheetToken( parent=GLOBAL_ANCESTOR, alias=alias, listfeed_url=listfeed_url, password=password, access_mode=access_mode )
+    def add(cls, alias, listfeed_url, spreadsheet_key, password='', access_mode='full'):
+        new = WorksheetToken( parent=GLOBAL_ANCESTOR, alias=alias, listfeed_url=listfeed_url, spreadsheet_key=spreadsheet_key, password=password, access_mode=access_mode )
         new.put()
 
     @classmethod
