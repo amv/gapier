@@ -2,9 +2,14 @@
     <p ng-show="aliases.length == 0">Create your first alias from the 'add' button below:</p>
     <p>[ <a href="" ng-click="add()">add</a> ] [ <a href="{{urls.logout_url}}">log out</a> ]</p>
     <table ng-hide="aliases.length == 0">
-        <tr><th>Token</th><th>Alias</th><th>Mode</th><th>Copy to clipboard</th></tr>
+        <tr><th>Token</th><th>Alias</th><th>Mode</th><th>To Clipboard:</th><th>Actions</th><th></th></tr>
         <tr ng-repeat="alias in aliases">
-            <td class="tokencover">{{alias.token}}</td><td>{{alias.alias}}</td><td>({{alias.access_mode}})</td><td><a href="" ng-click="clip(alias.token)">token</a>, <a href="" ng-click="curl(alias.token)">curl fetch</a></td>
+            <td class="tokencover">{{alias.token}}</td>
+            <td>{{alias.alias}}</td>
+            <td>({{alias.access_mode}})</td>
+            <td><a href="" ng-click="clip(alias.token)">token</a>, <a href="" ng-click="curl(alias.token)">curl fetch</a></td>
+            <td><span ng-show="!opened[alias.token]">[ <a href="" ng-click="opened[alias.token]=1">show</a> ]</span><span ng-show="opened[alias.token]">[ <a href="" ng-click="opened[alias.token]=0">hide</a> ]</span></td>
+            <td><span ng-show="opened[alias.token]"><span ng-show="alias.access_mode!='add-only'"><a href="" ng-click="log(alias.token)">Console.log(fetch)</a>, </span><span ng-show="alias.lacks_bundle" ><a href="" ng-click="create_bundle(alias.token)">Create bundle</a>, </span><span ng-show="alias.is_bundle"><a href="" ng-click="add_bundle_sheet(alias.token)">Add sheet</a>, </span><a href="" ng-click="remove_token(alias.token)">Remove</a></span></td>
         </tr>
     </table>
 </div>

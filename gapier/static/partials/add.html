@@ -1,8 +1,11 @@
-<h1>Choose your sheet alias, secret and access mode:</h1>
+<h1>Fill in required token info:</h1>
 <form ng-submit="add()">
-<p>Alias: <input type="text" ng-model="alias_data.alias" placeholder="Enter a name for the alias" /></p>
-<p>Secret: <input type="text" ng-model="alias_data.password" placeholder="No secret" /></p>
-<p>Access mode: <select ng-model="alias_data.access_mode"><option value="full">full</option><option value="read-only">read-only</option><option value="add-only">add-only</option></select></p>
-
+<p>Alias: <input type="text" ng-model="alias_data.alias" placeholder="Enter the alias for your token" /></p>
+<p><a href="" ng-show="!advanced.show" ng-click="advanced.show=1">Open advanced options</a></p>
+<div ng-show="advanced.show">
+    <p><a href="" ng-click="advanced.show=0">Hide advanced options</a></p>
+    <p>Secret: <input type="text" ng-model="alias_data.password" placeholder="No secret" /></p>
+    <p>Access mode: <select ng-model="alias_data.access_mode"><option value="full">full</option><option value="read-only">read-only</option><option value="add-only">add-only</option></select></p>
+</div>
 <p><input class="btn-primary" type="submit" value="Add" /> <input class="btn-primary" ng-click="cancel()" type="button" value="Cancel" /><p>
 </form>

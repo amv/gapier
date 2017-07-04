@@ -18,6 +18,9 @@ app = webapp2.WSGIApplication([
     ('/get_document_list', handlers.GetDocumentListHandler),
     ('/get_document_sheet_list', handlers.GetDocumentSheetListHandler),
     ('/add_token', handlers.AddTokenHandler),
+    ('/remove_token', handlers.RemoveTokenHandler),
+    ('/add_bundle_sheet', handlers.AddBundleSheetHandler),
+    ('/create_bundle', handlers.CreateBundleHandler),
 
     # User handlers
 

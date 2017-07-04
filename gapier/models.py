@@ -81,6 +81,9 @@ class WorksheetToken(ndb.Model):
             return self.access_mode
         return 'full'
 
+    def remove(self):
+        self.key.delete()
+
     @classmethod
     def get_all(cls):
         return WorksheetToken.query().fetch(999)
@@ -89,6 +92,7 @@ class WorksheetToken(ndb.Model):
     def add(cls, alias, listfeed_url, spreadsheet_key, password='', access_mode='full'):
         new = WorksheetToken( parent=GLOBAL_ANCESTOR, alias=alias, listfeed_url=listfeed_url, spreadsheet_key=spreadsheet_key, password=password, access_mode=access_mode )
         new.put()
+        return new
 
     @classmethod
     def get_for_token(cls, token):

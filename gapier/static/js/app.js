@@ -31,6 +31,14 @@ angular.module('ngGapier', [], function($routeProvider, $locationProvider, $http
         templateUrl: '/static/partials/add.html',
         controller: AddCntl
     });
+    $routeProvider.when('/add_bundle_sheet', {
+        templateUrl: '/static/partials/add_bundle_sheet.html',
+        controller: AddBundleSheetCntl
+    });
+    $routeProvider.when('/create_bundle', {
+        templateUrl: '/static/partials/create_bundle.html',
+        controller: CreateBundleCntl
+    });
 });
 
 function GapierCntl($scope, $route, $routeParams, $location, $http ) {
@@ -55,9 +63,10 @@ function GapierCntl($scope, $route, $routeParams, $location, $http ) {
     }
 }
 
-function ListCntl($scope, $routeParams, $http, $location) {
+function ListCntl($scope, $routeParams, $route, $http, $location, $rootScope) {
     $scope.name = "ListCntl";
     $scope.params = $routeParams;
+    $scope.opened = {};
     $scope.urls = { logout_url : gapier_variables['logout_url'] }
     $http.get( '/list_tokens' ).success(function( data ){ $scope.aliases = data })
     $scope.add = function(){
@@ -81,6 +90,39 @@ function ListCntl($scope, $routeParams, $http, $location) {
             $temp.remove();
         });
     }
+    $scope.add_bundle_sheet = function(token) {
+        $rootScope.sheet_data = { worksheet_token : token };
+        $location.path('/add_bundle_sheet')
+    }
+    $scope.create_bundle = function(token) {
+        $rootScope.bundle_data = { worksheet_token : token };
+        $location.path('/create_bundle')
+    }
+    $scope.log = function(token) {
+        var url = get_my_url( $scope ) + '/fetch?worksheet_token=' + token;
+        console.log('Sending JSONP request to ' + url);
+        $.ajax({
+            url: url,
+            callback: '?',
+            dataType: 'jsonp',
+            success: function(result){
+                console.log(JSON.stringify(result,null,2));
+                console.log(result);
+            }
+        });
+    }
+    $scope.remove_token = function( token ) {
+        if ( ! confirm( 'Really remove ' + token + '?') ) {
+            return;
+        }
+        $http.post( '/remove_token', { token : token } ).
+            success( function() {
+                $route.reload();
+            } ).
+            error( function() {
+                alert("fail");
+            } );
+    }
 }
 
 function AuthenticateCntl($scope, $routeParams) {
@@ -100,11 +142,7 @@ function WrongUserCntl($scope, $routeParams) {
 function SetupClientCntl($scope, $routeParams, $http) {
     $scope.name = "SetupClientCntl";
     $scope.params = $routeParams;
-    var url = $scope.$location.protocol() + '://' + $scope.$location.host();
-    var port = $scope.$location.port();
-    if ( port ) {
-        url = url + ':' + port;
-    }
+    var url = get_my_url( $scope );
     $scope.client_data = { "client_id" : "", "client_secret" : "", "gapier_url" : url };
     $scope.saveData = function() {
         $http.post( '/set_client', $scope.client_data ).
@@ -140,7 +178,7 @@ function AddChooseDocumentCntl($scope, $routeParams, $http, $rootScope ) {
             $scope.$location.path('/add_select_sheet');
         }
     }
-    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope );
+    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope, 'alias_data' );
 }
 
 function AddSelectSheetCntl($scope, $routeParams, $http, $rootScope ) {
@@ -164,13 +202,14 @@ function AddSelectSheetCntl($scope, $routeParams, $http, $rootScope ) {
         } );
         $scope.$location.path('/add');
     };
-    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope );
+    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope, 'alias_data' );
 }
 
 function AddCntl($scope, $routeParams, $http, $rootScope ) {
     $scope.name = "AddCntl";
     $scope.params = $routeParams;
     $scope.alias_data = { access_mode : 'full' };
+    $scope.advanced = { show : 0 }
 
     var charmap = "abcdefghijklmnopqrstuvwxyz";
     var password = '';
@@ -190,7 +229,7 @@ function AddCntl($scope, $routeParams, $http, $rootScope ) {
 
         $http.post( '/add_token', $rootScope.alias_data ).
             success( function() {
-                reset_alias_data( $rootScope );
+                delete $rootScope.alias_data;
                 $scope.$location.path('/list');
             } ).
             error( function() {
@@ -198,16 +237,122 @@ function AddCntl($scope, $routeParams, $http, $rootScope ) {
             } )
     };
 
-    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope );
+    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope, 'alias_data' );
 }
 
-function reset_alias_data( $rootScope ) {
-    delete $rootScope.alias_data;
+function AddBundleSheetCntl($scope, $routeParams, $http, $rootScope ) {
+    $scope.name = "AddBundleSheetCntl";
+    $scope.params = $routeParams;
+    $scope.sheet_data = { access_mode : 'full' };
+    $scope.advanced = { show : 0 }
+
+    var charmap = "abcdefghijklmnopqrstuvwxyz";
+    var password = '';
+    for ( var i = 0; i < 16; i++ ) {
+        password += charmap.charAt( Math.floor( Math.random() * charmap.length) );
+    }
+    $scope.sheet_data.password = password;
+
+    var from_alias = $rootScope.sheet_data.worksheet_token.split(/\:/)[0];
+
+    $scope.$watch('sheet_data.title', function() {
+        if ( $scope.sheet_data.title ) {
+            var key = $scope.sheet_data.title.toLowerCase();
+            key = key.replace(/[^a-z0-9\-]/g,'');
+            $scope.sheet_data.key = key;
+            $scope.sheet_data.alias = from_alias + '-' + key;
+        }
+        else {
+            $scope.sheet_data.key = '';
+            $scope.sheet_data.alias = '';
+        }
+    });
+
+    $scope.add = function() {
+        if ( ! $scope.sheet_data.title ) {
+            return alert( 'Title needs to be specified.')
+        }
+        if ( ! $scope.sheet_data.columns ) {
+            return alert( 'At least one column is needed')
+        }
+        if ( ! $scope.sheet_data.key ) {
+            return alert( 'Key needs to be specified.')
+        }
+        if ( ! $scope.sheet_data.alias ) {
+            return alert( 'Alias needs to be specified.')
+        }
+
+        $rootScope.sheet_data.title = $scope.sheet_data.title;
+        $rootScope.sheet_data.columns = $scope.sheet_data.columns;
+        $rootScope.sheet_data.key = $scope.sheet_data.key;
+        $rootScope.sheet_data.alias = $scope.sheet_data.alias;
+        $rootScope.sheet_data.access_mode = $scope.sheet_data.access_mode;
+        $rootScope.sheet_data.password = $scope.sheet_data.password;
+
+        $http.post( '/add_bundle_sheet', $rootScope.sheet_data ).
+            success( function( result ) {
+                delete $rootScope.sheet_data;
+                $scope.$location.path('/list');
+            } ).
+            error( function() {
+                alert("fail");
+            } )
+    };
+
+    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope, 'sheet_data' );
 }
 
-function create_reseting_cancel_to_list_handler( $scope, $rootScope ) {
+function CreateBundleCntl($scope, $routeParams, $http, $rootScope ) {
+    $scope.name = "CreateBundleCntl";
+    $scope.params = $routeParams;
+    $scope.bundle_data = { access_mode : 'read-only', title : 'Gapier Bundle' };
+    $scope.advanced = { show : 0 }
+
+    var charmap = "abcdefghijklmnopqrstuvwxyz";
+    var password = '';
+    for ( var i = 0; i < 16; i++ ) {
+        password += charmap.charAt( Math.floor( Math.random() * charmap.length) );
+    }
+    $scope.bundle_data.password = password;
+
+    $scope.add = function() {
+        if ( ! $scope.bundle_data.alias ) {
+            return alert( 'Alias needs to be specified.')
+        }
+        if ( ! $scope.bundle_data.title ) {
+            return alert( 'Title needs to be specified.')
+        }
+
+        $rootScope.bundle_data.alias = $scope.bundle_data.alias;
+        $rootScope.bundle_data.title = $scope.bundle_data.title;
+        $rootScope.bundle_data.access_mode = $scope.bundle_data.access_mode;
+        $rootScope.bundle_data.password = $scope.bundle_data.password;
+
+        $http.post( '/create_bundle', $rootScope.bundle_data ).
+            success( function( result ) {
+                delete $rootScope.bundle_data;
+                $scope.$location.path('/list');
+            } ).
+            error( function() {
+                alert("fail");
+            } )
+    };
+
+    $scope.cancel = create_reseting_cancel_to_list_handler( $scope, $rootScope, 'bundle_data' );
+}
+
+function create_reseting_cancel_to_list_handler( $scope, $rootScope, data_key ) {
     return function() {
-        reset_alias_data( $rootScope );
+        delete $rootScope[data_key];
         $scope.$location.path('/list');
     }
+}
+
+function get_my_url( $scope ) {
+    var url = $scope.$location.protocol() + '://' + $scope.$location.host();
+    var port = $scope.$location.port();
+    if ( port && port != 80 && port != 443 ) {
+        url = url + ':' + port;
+    }
+    return url;
 }

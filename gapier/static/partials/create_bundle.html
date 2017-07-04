@@ -1,0 +1,13 @@
+<h1>Specify what kind of bundle to add:</h1>
+<form ng-submit="add()">
+<p>Alias (*): <input type="text" ng-model="bundle_data.alias" placeholder="Enter an alias for the bundle" /></p>
+<p>(*) If alias does not end with "bundle", "-bundle" will be added at the end.</p>
+<p><a href="" ng-show="!advanced.show" ng-click="advanced.show=1">Open advanced options</a></p>
+<div ng-show="advanced.show">
+    <p><a href="" ng-click="advanced.show=0">Hide advanced options</a></p>
+    <p>Title: <input type="text" ng-model="bundle_data.title" placeholder="Enter bundle sheet title" /></p>
+    <p>Secret: <input type="text" ng-model="bundle_data.password" placeholder="No secret" /></p>
+    <p>Access mode: <select ng-model="bundle_data.access_mode"><option value="full">full</option><option value="read-only">read-only</option><option value="add-only">add-only</option></select></p>
+</div>
+<p><input class="btn-primary" type="submit" value="Add" /> <input class="btn-primary" ng-click="cancel()" type="button" value="Cancel" /><p>
+</form>

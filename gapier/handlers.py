@@ -96,7 +96,15 @@ class ListTokensHandler(webapp2.RequestHandler):
         aliases.sort(key=lambda x: x.get_token())
         result_data = []
         for alias in aliases:
-            alias_data = { 'token' : alias.get_token(), 'access_mode' : alias.get_access_mode(), 'alias' : alias.alias, 'password' : alias.password }
+            is_bundle = 0
+            if re.search( 'bundle$', alias.alias.lower() ):
+                is_bundle = 1
+
+            lacks_bundle = 1
+            if re.search( 'bundle', alias.alias.lower() ):
+                lacks_bundle = 0
+
+            alias_data = { 'token' : alias.get_token(), 'access_mode' : alias.get_access_mode(), 'alias' : alias.alias, 'password' : alias.password, 'is_bundle' : is_bundle, 'lacks_bundle' : lacks_bundle }
             result_data.append( alias_data )
 
         output_as_json( self, result_data )
@@ -135,6 +143,132 @@ class AddTokenHandler(webapp2.RequestHandler):
         models.WorksheetToken.add( params['alias'], params['listfeed_url'], params['spreadsheet_key'], params['password'], params['access_mode'] )
 
         output_result_as_json( self, 'ok');
+
+class RemoveTokenHandler(webapp2.RequestHandler):
+    def post(self):
+        if check_invalid_auth( self ): return
+
+        params = json.loads( self.request.body )
+        token = models.WorksheetToken.get_for_token( params['token'] )
+        token.remove();
+
+        output_result_as_json( self, 'ok');
+
+class AddBundleSheetHandler(webapp2.RequestHandler):
+    def post(self):
+        if check_invalid_auth( self ): return
+
+        params = json.loads( self.request.body )
+
+        from_token = models.WorksheetToken.get_for_token( params['worksheet_token'] )
+
+        if not from_token:
+            return output_result_as_json( self, 'Invalid token');
+        if not from_token.spreadsheet_key:
+            return output_result_as_json( self, 'No spreadsheet_key in token');
+
+        columns_string = params['columns']
+        columns = re.compile(r'\s*\,\s*').split( columns_string )
+
+        add_url = 'https://spreadsheets.google.com/feeds/worksheets/' + from_token.spreadsheet_key + '/private/full';
+
+        result = add_empty_sheet_to_spreadsheet( add_url, params['title'], 1, len(columns) )
+
+        listfeed_url = result['entry']['content']['@src']
+
+        token = models.WorksheetToken.add( params['alias'], listfeed_url, from_token.spreadsheet_key, params['password'], params['access_mode'] )
+
+        add_token_key_to_bundle_spreadsheet( params['key'], token.get_token(), from_token.listfeed_url )
+
+        cellsfeed_url = listfeed_url.replace('/list/', '/cells/', 1);
+        replace_spreadsheet_row_values( cellsfeed_url, 1, columns )
+
+        output_result_as_json( self, 'ok' );
+
+class CreateBundleHandler(webapp2.RequestHandler):
+    def post(self):
+        if check_invalid_auth( self ): return
+
+        params = json.loads( self.request.body )
+
+        from_token = models.WorksheetToken.get_for_token( params['worksheet_token'] )
+
+        if not from_token:
+            return output_result_as_json( self, 'Invalid token');
+        if not from_token.spreadsheet_key:
+            return output_result_as_json( self, 'No spreadsheet_key in token');
+
+        columns = [ 'Sheet key', 'Token' ];
+
+        add_url = 'https://spreadsheets.google.com/feeds/worksheets/' + from_token.spreadsheet_key + '/private/full';
+
+        result = add_empty_sheet_to_spreadsheet( add_url, params['title'], 1, len(columns) )
+
+        listfeed_url = result['entry']['content']['@src']
+
+        bundle_alias = params['alias']
+        if not re.compile(r'.*bundle$').match( bundle_alias ):
+            bundle_alias = bundle_alias + '-bundle'
+
+        token = models.WorksheetToken.add( bundle_alias, listfeed_url, from_token.spreadsheet_key, params['password'], 'read-only' )
+
+        cellsfeed_url = listfeed_url.replace('/list/', '/cells/', 1);
+        replace_spreadsheet_row_values( cellsfeed_url, 1, columns )
+
+        newly_bundled_alias = bundle_alias + '-' + from_token.alias
+
+        newly_bundled_token = models.WorksheetToken.add( newly_bundled_alias, from_token.listfeed_url, from_token.spreadsheet_key, from_token.password, from_token.access_mode )
+
+        add_token_key_to_bundle_spreadsheet( from_token.alias, newly_bundled_token.get_token(), listfeed_url )
+
+        output_result_as_json( self, 'ok' );
+
+def add_empty_sheet_to_spreadsheet( add_url, title, rows_count, columns_count ):
+    entry = OrderedDict()
+    entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
+    entry['@xmlns:gs'] = "http://schemas.google.com/spreadsheets/2006"
+    entry['title'] = title;
+    entry['gs:rowCount'] = rows_count;
+    entry['gs:colCount'] = columns_count;
+
+    entry_dict = OrderedDict([ ( 'entry', entry ) ] )
+    entry_xml = xmltodict.unparse( entry_dict ).encode('utf-8')
+
+    content = make_authorized_request( add_url, None, 'POST', entry_xml )
+    return xmltodict.parse( content )
+
+def add_token_key_to_bundle_spreadsheet( sheet_key, token, listfeed_url ):
+    entry = OrderedDict()
+    entry['gsx:sheetkey'] = unicode( sheet_key )
+    entry['gsx:token'] = unicode( token )
+    entry_xml = entry_to_utf8_gsx_xml( entry )
+    make_authorized_request( listfeed_url, None, 'POST', entry_xml )
+
+def replace_spreadsheet_row_values( cellsfeed_url, row_number, column_values, use_raw_values=False ):
+    for index, column in enumerate(column_values, start=1):
+        cell = 'R' + str(row_number) + 'C' + str(index)
+        cell_url = cellsfeed_url + '/' + cell
+
+        value = str(column)
+        if not use_raw_values:
+            value = "'" + value
+
+        entry = OrderedDict()
+        entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
+        entry['@xmlns:gs'] = "http://schemas.google.com/spreadsheets/2006"
+        entry['id'] = cell_url
+        entry['link'] = OrderedDict()
+        entry['link']['@rel'] = 'edit'
+        entry['link']['@type'] = 'application/atom+xml'
+        entry['link']['@href'] = cell_url
+        entry['gs:cell'] = OrderedDict()
+        entry['gs:cell']['@row'] = str(row_number)
+        entry['gs:cell']['@col'] = str(index)
+        entry['gs:cell']['@inputValue'] = unicode( value )
+        entry_dict = OrderedDict([ ( 'entry', entry ) ] )
+        entry_xml = xmltodict.unparse( entry_dict ).encode('utf-8')
+
+        make_authorized_request( cell_url, None, 'PUT', entry_xml, { 'If-None-Match' : 'replace' } )
 
 class FetchHandler(webapp2.RequestHandler):
     def post_and_get(self):
@@ -574,7 +708,7 @@ def get_flow( info=False ):
             access_type='offline',
             redirect_uri=info.client_url + '/oauth2callback' )
 
-def make_authorized_request( uri, credentials=None, method='GET', body=None ):
+def make_authorized_request( uri, credentials=None, method='GET', body=None, custom_headers=None ):
     timeouts = [ 17, 8, 4 ]
 
     if method == 'POST':
@@ -583,14 +717,14 @@ def make_authorized_request( uri, credentials=None, method='GET', body=None ):
     while timeouts:
         timeout = timeouts.pop()
         try:
-            return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout )
+            return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout, custom_headers=custom_headers )
         except HTTPException:
             logging.info( "An attempt to " +method+ " to " +uri+ " timed out in " +str(timeout)+ " seconds." )
 
     logging.error("All attempts to " +method+ " to " +uri+ " timed out.")
     return ""
 
-def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10 ):
+def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10, custom_headers=None ):
     if not credentials:
         credentials = models.CredentialsInfo.get_valid_credentials()
 
@@ -598,6 +732,9 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
     http = credentials.authorize( http )
 
     headers = { 'GData-Version' : '3.0' }
+    if custom_headers:
+        for header in custom_headers:
+            headers[header] = custom_headers[header]
 
     if method == 'GET':
         data = None
