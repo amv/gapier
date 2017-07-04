@@ -228,12 +228,12 @@ While Gapier does not yet support it, it would also be possible to extend the se
 5. Follow a few steps of the tutorial until you get a black cloud console at the bottom of your browser.
 6. Click "Cancel Tutorial" and input the following commands to your cloud console:
 
+Note that you need to answer (y) to the last two commands.
+
     git clone https://github.com/amv/gapier ~/gapier
     cd gapier
     gcloud datastore create-indexes index.yaml
     gcloud app deploy app.yaml
-
-7. The two last commands need you to answer "Y", but after that your service should be running.
 
 ## Configure your Gapier service
 
