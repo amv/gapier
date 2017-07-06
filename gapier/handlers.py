@@ -14,8 +14,8 @@ import urllib
 import logging
 import time
 import zlib
-import pickle
 import base64
+import md5
 
 from httplib import HTTPException
 from collections import OrderedDict
@@ -683,7 +683,7 @@ def get_worksheet_list_dict_or_error_for_webapp( webapp, required_access_mode='f
     if not list_dict:
         return { 'error' : webapp.error(500) }
 
-    if not type( list_dict ) is OrderedDict:
+    if not type( list_dict ) is dict:
         return { 'error' : webapp.error(500) }
 
     if not 'feed' in list_dict:
@@ -738,10 +738,11 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
 
     if method == 'GET':
         data = None
-        compressed_data = memcache.get( uri )
+
+        compressed_data = memcache.get( 'jsoncontent:'+str(uri) )
 
         if compressed_data is not None:
-            data = pickle.loads( zlib.decompress( compressed_data ) )
+            data = json.loads( zlib.decompress( compressed_data ) )
 
         if data is not None:
             headers['If-None-Match'] = data['etag'];
@@ -750,7 +751,8 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
         if resp['status'] == '200':
             if 'etag' in resp and resp['etag']:
                 try:
-                    memcache.set( uri, zlib.compress( pickle.dumps( { 'etag' : resp['etag'], 'content' : content } ) ) )
+                    memcache.set( 'jsoncontent:'+str(uri), zlib.compress( json.dumps( { 'etag' : resp['etag'], 'content' : content } ) ) )
+
                 except:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     logging.error(exc_value)
@@ -772,24 +774,44 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
 
 def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=0 ):
     if acceptable_staleness > 0:
-        data = memcache.get( "dict:" + uri )
+        data = memcache.get( "dictjson:" + uri )
         if data is not None:
-            data = pickle.loads( zlib.decompress( data ) )
+            data = json.loads( zlib.decompress( data ) )
             if time.time() < int( data['gmtime'] ) + acceptable_staleness:
+                print "Serving cached version because of acceptable_staleness."
                 return data['content']
 
     content = make_authorized_request( uri, credentials )
 
-    parsed_content = xmltodict.parse( content )
+    parsed_content = content_to_dict(content)
 
     try:
         if acceptable_staleness > 0:
-            memcache.set( "dict:" + uri, zlib.compress(pickle.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
+            memcache.set( "dictjson:" + uri, zlib.compress(json.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logging.error(exc_value)
 
     return parsed_content
+
+def content_to_dict( content ):
+    digest = md5.md5(content).hexdigest();
+    data = memcache.get( "parseddictjson:" + digest )
+
+    if data is not None:
+        pickled_content = zlib.decompress( data )
+        parsed_content = json.loads( pickled_content )
+        return parsed_content
+
+    print "Missed content dict cache lookup."
+    parsed_content = xmltodict.parse( content )
+
+    pickled_content = json.dumps( parsed_content )
+    compressed_content = zlib.compress( pickled_content )
+    memcache.set( "parseddictjson:" + digest, compressed_content );
+
+    # return json parsed version so we always get dict without OrderedDicts
+    return json.loads( pickled_content )
 
 def authorized_json_request_as_dict( uri, credentials=None ):
     content = make_authorized_request( uri, credentials )
