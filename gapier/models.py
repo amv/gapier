@@ -6,8 +6,6 @@ import httplib2
 import string
 import logging
 
-GLOBAL_ANCESTOR = ndb.Key( 'Gapier', 'Ancestor' )
-
 class ClientInfo(ndb.Model):
     created_date = ndb.DateTimeProperty(auto_now_add=True)
     client_id = ndb.StringProperty(indexed=False)
@@ -18,15 +16,12 @@ class ClientInfo(ndb.Model):
 
     @classmethod
     def set_new(cls, client_id, client_secret, client_url, config_user, config_user_email ):
-        info = ClientInfo( parent=GLOBAL_ANCESTOR, client_id=client_id, client_secret=client_secret, client_url=client_url, config_user=config_user, config_user_email=config_user_email )
+        info = ClientInfo( client_id=client_id, client_secret=client_secret, client_url=client_url, config_user=config_user, config_user_email=config_user_email, id='main' )
         info.put();
 
     @classmethod
     def get_latest(cls):
-        latest = cls.query( ancestor=GLOBAL_ANCESTOR ).order(-cls.created_date).fetch(1)
-        for item in latest:
-            return item
-        return False
+        return ndb.Key( ClientInfo, 'main' ).get()
 
 class CredentialsInfo(ndb.Model):
     created_date = ndb.DateTimeProperty(auto_now_add=True)
@@ -34,15 +29,12 @@ class CredentialsInfo(ndb.Model):
 
     @classmethod
     def set_new(cls, credentials ):
-        info = CredentialsInfo( parent=GLOBAL_ANCESTOR, credentials=credentials )
+        info = CredentialsInfo( credentials=credentials, id = 'main' )
         info.put()
 
     @classmethod
     def get_latest(cls):
-        latest = cls.query( ancestor=GLOBAL_ANCESTOR ).order(-cls.created_date).fetch(1)
-        for item in latest:
-            return item
-        return False
+        return ndb.Key(CredentialsInfo, 'main').get()
 
     @classmethod
     def get_valid_credentials(cls):
@@ -62,6 +54,8 @@ class CredentialsInfo(ndb.Model):
     def refresh_credentials(cls, credentials):
         http = httplib2.Http()
         credentials.refresh( http );
+
+TOKEN_ANCESTOR = ndb.Key( 'Gapier', 'Ancestor' )
 
 class WorksheetToken(ndb.Model):
     created_date = ndb.DateTimeProperty(auto_now_add=True)
@@ -90,7 +84,7 @@ class WorksheetToken(ndb.Model):
 
     @classmethod
     def add(cls, alias, listfeed_url, spreadsheet_key, password='', access_mode='full'):
-        new = WorksheetToken( parent=GLOBAL_ANCESTOR, alias=alias, listfeed_url=listfeed_url, spreadsheet_key=spreadsheet_key, password=password, access_mode=access_mode )
+        new = WorksheetToken( parent=TOKEN_ANCESTOR, alias=alias, listfeed_url=listfeed_url, spreadsheet_key=spreadsheet_key, password=password, access_mode=access_mode )
         new.put()
         return new
 
@@ -111,7 +105,7 @@ class WorksheetToken(ndb.Model):
         if not find_alias:
             return False
 
-        found_object = cls.query( cls.alias == find_alias, ancestor=GLOBAL_ANCESTOR ).get()
+        found_object = cls.query( cls.alias == find_alias, ancestor=TOKEN_ANCESTOR ).get()
 
         if not found_object:
             logging.debug('alias not found')
