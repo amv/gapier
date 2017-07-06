@@ -80,7 +80,7 @@ class WorksheetToken(ndb.Model):
 
     @classmethod
     def get_all(cls):
-        return WorksheetToken.query().fetch(999)
+        return WorksheetToken.query(ancestor=TOKEN_ANCESTOR).fetch(999)
 
     @classmethod
     def add(cls, alias, listfeed_url, spreadsheet_key, password='', access_mode='full'):
