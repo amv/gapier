@@ -121,7 +121,7 @@ You should look at the documentation of `=FILTER` and `=QUERY` if you want to vi
 
 Gapier ships with a JSONP transport, which means that any web page which has the access token can interact with the token's spreadsheet through Gapier.
 
-Using a token with full read & write access to a spreadsheet from a public website is however often not something you want to do. What you usually would want to do instead is one of the following:
+Using a token with full read & write access to a spreadsheet from a public website is however often not something you want to do. Usually you would want to do one of the following:
 
  * Use a **read-only token** to display data on your website that is authored manually through the spreadsheet.
  * Use a **add-only token** to allow users to submit a form and add the form data to a new row in the spreadsheet for later processing.
@@ -180,14 +180,16 @@ Accepts only POST requests. The "validate" definition can be given using either 
 
 # Why does Gapier exist?
 
-Spreadsheets (Google or otherwise) are one of the most intuitive and flexible interfaces to interact with data from various sources. However putting the data in spreadsheets automatically is usually a lot harder than one would like it to be.
+For more than 30 years business processes have involved passing Excel files from person to another. This is arguably because spreadsheets are one of the most intuitive, flexible and familiar interfaces to interact with information of various types.
 
-Gapier exists to make this process as easy as possible from any source that can send simple HTTP requests.
+Spreadsheet files have also often been used to put data gathered by humans into automated systems, or take out data for human processing. Nowadays this is also possible without humans importing and exporting files, by directly using Google Sheets and it's APIs.
 
-To achieve this goal, Gapier does 2 main things:
+Naturally there are many faster and more efficient way for systems to communicate with each others than through spreadsheets. However when the underlying business process requires input, oversight or action that is still best done by humans, a simple spreadsheet would still be one of the most familiar interfaces for users to take part in the process.
 
- * Gapier manages your sensitive secrets and **gives you simple tokens with limited access rights** that you can safely deploy to servers or websites.
+The goal of Gapier is to make incorporating automated spreadsheets into business processes as simple as possible. To achieve this goal, Gapier does 2 main things:
+
  * Gapier exposes a simple HTTP API that **allows easily adding and updating rows** without doing row matching yourself.
+ * Gapier manages your sensitive secrets and **gives you simple tokens with limited access rights** that you can safely deploy to servers or websites.
 
 This project was originally inspired by Zapier and tried to expand it's limited feature set when dealing with Google Spreadsheets. If you are a fan of Zapier, you will find that Gapier should be easy to use through the custom code steps with the `request` library.
 
