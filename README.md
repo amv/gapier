@@ -191,7 +191,7 @@ The goal of Gapier is to make incorporating automated spreadsheets into business
  * Gapier exposes a simple HTTP API that **allows easily adding and updating rows** without doing row matching yourself.
  * Gapier manages your sensitive secrets and **gives you simple tokens with limited access rights** that you can safely deploy to servers or websites.
 
-This project was originally inspired by Zapier and tried to expand it's limited feature set when dealing with Google Spreadsheets. If you are a fan of Zapier, you will find that Gapier should be easy to use through the custom code steps with the `request` library.
+This project was originally inspired by [Zapier](http://zapier.com/) and tried to expand it's limited feature set when dealing with Google Spreadsheets in the spirit of Open Source. If you are a fan of Zapier, you will find that Gapier should be easy to use through the custom code steps with the `request` library.
 
 ## Why a service and not just a library?
 
@@ -239,8 +239,8 @@ Note that you need to answer (y) to the last two commands.
 
 ## Configure your Gapier service
 
-1. First open your browser at "https://myorg-myname-gapier.appspot.com/". If you see an error, please wait for a while for the index to be created and reload the page.
+1. First open your browser at "https://myorg-myname-gapier.appspot.com/".
 2. Click "Log in!". Gapier administration will be permanently bound to the first user who logs in, and no other users can manage the tokens.
-2. Gapier should now ask you for the Client ID and Client secret of the API Credentials you created earlier. The domain should be pre-filled correctly.
+2. Gapier should now ask you for the Client ID and Client secret of the API Credentials you created earlier. If you forgot to take note of them, you can find them [here](https://console.cloud.google.com/apis/credentials). The domain should be pre-filled correctly.
 3. After storing the credentials, Gapier will guide you to allow it to access to spreadsheets on behalf of some user.
 4. After granting access to spreadsheets, you should be able to start adding spreadsheet tokens!
