@@ -35,6 +35,15 @@ class MainHandler(webapp2.RequestHandler):
         credentials = models.CredentialsInfo.get_latest();
         template_values = {}
 
+        if not info:
+            try:
+                with open('client_secret.json', 'r') as f:
+                    secret_data = json.loads(f.read())
+                    template_values["prefill_client_id"] = secret_data["web"]["client_id"];
+                    template_values["prefill_client_secret"] = secret_data["web"]["client_secret"];
+            except:
+                pass
+
         if user:
             template_values["config_user"] = user.user_id()
             template_values["logout_url"] = users.create_logout_url('/')

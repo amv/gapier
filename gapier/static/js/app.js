@@ -143,7 +143,11 @@ function SetupClientCntl($scope, $routeParams, $http) {
     $scope.name = "SetupClientCntl";
     $scope.params = $routeParams;
     var url = get_my_url( $scope );
-    $scope.client_data = { "client_id" : "", "client_secret" : "", "gapier_url" : url };
+    $scope.client_data = {
+        "client_id" : gapier_variables.prefill_client_id,
+        "client_secret" : gapier_variables.prefill_client_secret,
+        "gapier_url" : url
+    };
     $scope.saveData = function() {
         $http.post( '/set_client', $scope.client_data ).
             success( function() { window.location = '/'; } ).
