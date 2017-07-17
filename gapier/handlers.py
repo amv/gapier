@@ -4,10 +4,9 @@
 import webapp2
 import re
 import json
+import zlib
 
 import xmltodict
-import logging
-import zlib
 
 from httplib import HTTPException
 from collections import OrderedDict
@@ -728,8 +727,10 @@ def make_authorized_request( uri, credentials=None, method='GET', body=None, cus
         try:
             return make_authorized_request_attempt( uri, credentials=credentials, method=method, body=body, timeout=timeout, custom_headers=custom_headers )
         except HTTPException:
+            import logging
             logging.info( "An attempt to " +method+ " to " +uri+ " timed out in " +str(timeout)+ " seconds." )
 
+    import logging
     logging.error("All attempts to " +method+ " to " +uri+ " timed out.")
     return ""
 
@@ -766,6 +767,7 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
 
                 except:
                     import sys
+                    import logging
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     logging.error(exc_value)
 
@@ -773,6 +775,7 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
         elif resp['status'] == '304':
             return data['content']
         else:
+            import logging
             logging.error("Received unexpected return from authorized request. Response and Content to follow:")
             logging.error( resp )
             logging.error( content )
@@ -804,6 +807,7 @@ def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=
             memcache.set( "dictjson:" + uri, zlib.compress(json.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
     except:
         import sys
+        import logging
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logging.error(exc_value)
 

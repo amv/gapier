@@ -2,7 +2,6 @@
 
 
 from google.appengine.ext import ndb
-import logging
 
 class ClientInfo(ndb.Model):
     created_date = ndb.DateTimeProperty(auto_now_add=True)
@@ -109,10 +108,12 @@ class WorksheetToken(ndb.Model):
         found_object = cls.query( cls.alias == find_alias, ancestor=TOKEN_ANCESTOR ).get()
 
         if not found_object:
+            import logging
             logging.debug('alias not found')
             return False
 
         if found_object.password and not found_object.password == match_password:
+            import logging
             logging.debug('password mismatch')
             return False
 
