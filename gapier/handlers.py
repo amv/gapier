@@ -8,10 +8,6 @@ import zlib
 from google.appengine.api import memcache
 from gapier import models
 
-import xmltodict
-
-
-
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         from google.appengine.api import users
@@ -227,6 +223,7 @@ class CreateBundleHandler(webapp2.RequestHandler):
 
 def add_empty_sheet_to_spreadsheet( add_url, title, rows_count, columns_count ):
     from collections import OrderedDict
+    import xmltodict
 
     entry = OrderedDict()
     entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
@@ -252,6 +249,7 @@ def add_token_key_to_bundle_spreadsheet( sheet_key, token, listfeed_url ):
 
 def replace_spreadsheet_row_values( cellsfeed_url, row_number, column_values, use_raw_values=False ):
     from collections import OrderedDict
+    import xmltodict
 
     for index, column in enumerate(column_values, start=1):
         cell = 'R' + str(row_number) + 'C' + str(index)
@@ -538,6 +536,7 @@ class TrimRowsHandler(webapp2.RequestHandler):
 
 def entry_to_utf8_gsx_xml( entry ):
     from collections import OrderedDict
+    import xmltodict
 
     entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
     entry['@xmlns:gsx'] = 'http://schemas.google.com/spreadsheets/2006/extended'
@@ -833,6 +832,8 @@ def content_to_dict( content ):
         return parsed_content
 
     print "Missed content dict cache lookup."
+
+    import xmltodict
     parsed_content = xmltodict.parse( content )
 
     pickled_content = json.dumps( parsed_content )
