@@ -5,15 +5,13 @@ import webapp2
 import re
 import json
 import zlib
+from google.appengine.api import memcache
+from gapier import models
 
 import xmltodict
 
-from httplib import HTTPException
 from collections import OrderedDict
 
-from google.appengine.api import memcache
-
-from gapier import models
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
@@ -717,6 +715,8 @@ def get_flow( info=False ):
             redirect_uri=info.client_url + '/oauth2callback' )
 
 def make_authorized_request( uri, credentials=None, method='GET', body=None, custom_headers=None ):
+    from httplib import HTTPException
+
     timeouts = [ 17, 8, 4 ]
 
     if method == 'POST':
