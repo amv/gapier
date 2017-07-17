@@ -6,8 +6,6 @@ import re
 import json
 
 import xmltodict
-import random
-import urllib
 import logging
 import time
 import zlib
