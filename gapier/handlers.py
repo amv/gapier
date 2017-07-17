@@ -17,7 +17,6 @@ import md5
 from httplib import HTTPException
 from collections import OrderedDict
 
-from oauth2client.client import OAuth2WebServerFlow
 from google.appengine.api import memcache
 
 from gapier import models
@@ -712,6 +711,9 @@ def get_worksheet_list_dict_or_error_for_webapp( webapp, required_access_mode='f
 def get_flow( info=False ):
     if not info:
         info = models.ClientInfo.get_latest()
+
+    from oauth2client.client import OAuth2WebServerFlow
+
     return OAuth2WebServerFlow(
             client_id=info.client_id,
             client_secret=info.client_secret,
