@@ -83,7 +83,7 @@ class WorksheetToken(ndb.Model):
 
     @classmethod
     def add(cls, alias, listfeed_url, spreadsheet_key, password='', access_mode='full'):
-        new = WorksheetToken( parent=TOKEN_ANCESTOR, alias=alias, listfeed_url=listfeed_url, spreadsheet_key=spreadsheet_key, password=password, access_mode=access_mode )
+        new = WorksheetToken( parent=TOKEN_ANCESTOR, id=alias, alias=alias, listfeed_url=listfeed_url, spreadsheet_key=spreadsheet_key, password=password, access_mode=access_mode )
         new.put()
         return new
 
@@ -105,7 +105,10 @@ class WorksheetToken(ndb.Model):
         if not find_alias:
             return False
 
-        found_object = cls.query( cls.alias == find_alias, ancestor=TOKEN_ANCESTOR ).get()
+        found_object = ndb.Key(WorksheetToken, find_alias, parent=TOKEN_ANCESTOR).get()
+        if not found_object:
+            # legacy support for tokens without alias as id
+            found_object = cls.query( cls.alias == find_alias, ancestor=TOKEN_ANCESTOR ).get()
 
         if not found_object:
             import logging
