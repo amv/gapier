@@ -6,7 +6,6 @@ import re
 import json
 
 import xmltodict
-import string
 import random
 import urllib
 import logging
@@ -591,7 +590,7 @@ def _get_data_or_error_for_webapp( webapp, prefix, allow_empty=None ):
             columns = re.compile(r'\s*\,\s*').split( match_columns )
             if not match_values:
                 match_values = ''
-            values = string.split( match_values, ',' )
+            values = re.compile(r'\,').split( match_values )
 
             for i in range( len( columns )):
                 if len( values ) <= i:
@@ -639,7 +638,7 @@ def get_validate_data_or_error_for_webapp( webapp ):
 
             for row in validate_values:
                 row_list = []
-                values = string.split( row, ',' )
+                values = re.compile(r'\,').split( row )
                 for i in range( len( columns )):
                     if len( values ) <= i:
                         values.append('')
