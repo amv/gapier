@@ -20,14 +20,15 @@ from collections import OrderedDict
 
 from oauth2client.client import OAuth2WebServerFlow
 from google.appengine.api import memcache
-from google.appengine.api import users
 
 from gapier import models
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        info = models.ClientInfo.get_latest()
+        from google.appengine.api import users
         user = users.get_current_user()
+
+        info = models.ClientInfo.get_latest()
         credentials = models.CredentialsInfo.get_latest();
         template_values = {}
 
@@ -66,8 +67,10 @@ class MainHandler(webapp2.RequestHandler):
 
 class SetClientHandler(webapp2.RequestHandler):
     def post(self):
-        params = json.loads( self.request.body )
+        from google.appengine.api import users
         user = users.get_current_user()
+
+        params = json.loads( self.request.body )
 
         latest = models.ClientInfo.get_latest()
         if latest:
@@ -826,7 +829,9 @@ def authorized_json_request_as_dict( uri, credentials=None ):
     return json.loads( content )
 
 def check_invalid_auth( rh, info=False ):
+    from google.appengine.api import users
     user = users.get_current_user()
+
     if not user:
         return rh.error(403)
     if not info:
