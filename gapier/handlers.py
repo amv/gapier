@@ -12,7 +12,6 @@ import urllib
 import logging
 import time
 import zlib
-import base64
 import md5
 
 from httplib import HTTPException
@@ -56,6 +55,8 @@ class MainHandler(webapp2.RequestHandler):
             template_values["login_url"] = users.create_login_url('/')
             if info:
                 template_values["expected_config_user_email"] = info.config_user_email
+
+        import base64
 
         base64_variables = base64.b64encode(json.dumps(template_values, sort_keys=True, indent=4))
 
