@@ -2,7 +2,6 @@
 
 
 from google.appengine.ext import ndb
-import httplib2
 import string
 import logging
 
@@ -52,6 +51,8 @@ class CredentialsInfo(ndb.Model):
 
     @classmethod
     def refresh_credentials(cls, credentials):
+        import httplib2
+
         http = httplib2.Http()
         credentials.refresh( http );
 

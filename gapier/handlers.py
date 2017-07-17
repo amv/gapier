@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+# These are used pretty much in all code paths, so we will load them at the start
 import webapp2
 import re
 import json
-import httplib2
+
 import xmltodict
 import string
 import random
@@ -740,6 +741,8 @@ def make_authorized_request( uri, credentials=None, method='GET', body=None, cus
 def make_authorized_request_attempt( uri, credentials=None, method='GET', body=None, timeout=10, custom_headers=None ):
     if not credentials:
         credentials = models.CredentialsInfo.get_valid_credentials()
+
+    import httplib2
 
     http = httplib2.Http( timeout=timeout )
     http = credentials.authorize( http )
