@@ -2,7 +2,6 @@
 
 
 from google.appengine.ext import ndb
-import string
 import logging
 
 class ClientInfo(ndb.Model):
@@ -91,7 +90,8 @@ class WorksheetToken(ndb.Model):
 
     @classmethod
     def get_for_token(cls, token):
-        parts = string.split( token, ':' )
+        import re
+        parts = re.compile(r'\:').split( token )
 
         if len(parts) < 1:
             return False
