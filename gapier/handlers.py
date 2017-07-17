@@ -10,7 +10,6 @@ from gapier import models
 
 import xmltodict
 
-from collections import OrderedDict
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -227,6 +226,8 @@ class CreateBundleHandler(webapp2.RequestHandler):
         output_result_as_json( self, 'ok' );
 
 def add_empty_sheet_to_spreadsheet( add_url, title, rows_count, columns_count ):
+    from collections import OrderedDict
+
     entry = OrderedDict()
     entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
     entry['@xmlns:gs'] = "http://schemas.google.com/spreadsheets/2006"
@@ -241,6 +242,8 @@ def add_empty_sheet_to_spreadsheet( add_url, title, rows_count, columns_count ):
     return xmltodict.parse( content )
 
 def add_token_key_to_bundle_spreadsheet( sheet_key, token, listfeed_url ):
+    from collections import OrderedDict
+
     entry = OrderedDict()
     entry['gsx:sheetkey'] = unicode( sheet_key )
     entry['gsx:token'] = unicode( token )
@@ -248,6 +251,8 @@ def add_token_key_to_bundle_spreadsheet( sheet_key, token, listfeed_url ):
     make_authorized_request( listfeed_url, None, 'POST', entry_xml )
 
 def replace_spreadsheet_row_values( cellsfeed_url, row_number, column_values, use_raw_values=False ):
+    from collections import OrderedDict
+
     for index, column in enumerate(column_values, start=1):
         cell = 'R' + str(row_number) + 'C' + str(index)
         cell_url = cellsfeed_url + '/' + cell
@@ -408,6 +413,7 @@ def generic_add_update_remove_handler( webapp, update_mode=False, add_mode=False
         if not add_mode:
             return custom_error( webapp, 404, 'Matching rows not found.')
 
+        from collections import OrderedDict
         entry = OrderedDict()
 
         for data_list in [ match_data, set_data ]:
@@ -531,6 +537,8 @@ class TrimRowsHandler(webapp2.RequestHandler):
         output_result_as_json( self, 'DONE: ' + str( removed_count ) + ' of ' + str( preserved_count + removed_count ) + ' rows were removed.')
 
 def entry_to_utf8_gsx_xml( entry ):
+    from collections import OrderedDict
+
     entry['@xmlns'] = 'http://www.w3.org/2005/Atom'
     entry['@xmlns:gsx'] = 'http://schemas.google.com/spreadsheets/2006/extended'
     entry['@xmlns:gd'] = "http://schemas.google.com/g/2005"
