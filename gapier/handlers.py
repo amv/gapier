@@ -12,7 +12,6 @@ import urllib
 import logging
 import time
 import zlib
-import md5
 
 from httplib import HTTPException
 from collections import OrderedDict
@@ -813,6 +812,8 @@ def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=
     return parsed_content
 
 def content_to_dict( content ):
+    import md5
+
     digest = md5.md5(content).hexdigest();
     data = memcache.get( "parseddictjson:" + digest )
 
