@@ -7,7 +7,6 @@ import json
 
 import xmltodict
 import logging
-import time
 import zlib
 
 from httplib import HTTPException
@@ -790,6 +789,7 @@ def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=
         data = memcache.get( "dictjson:" + uri )
         if data is not None:
             data = json.loads( zlib.decompress( data ) )
+            import time
             if time.time() < int( data['gmtime'] ) + acceptable_staleness:
                 print "Serving cached version because of acceptable_staleness."
                 return data['content']
@@ -800,6 +800,7 @@ def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=
 
     try:
         if acceptable_staleness > 0:
+            import time
             memcache.set( "dictjson:" + uri, zlib.compress(json.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
     except:
         import sys
