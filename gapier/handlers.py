@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import webapp2
-import sys
 import re
 import json
 import httplib2
@@ -768,6 +767,7 @@ def make_authorized_request_attempt( uri, credentials=None, method='GET', body=N
                     memcache.set( 'jsoncontent:'+str(uri), zlib.compress( json.dumps( { 'etag' : resp['etag'], 'content' : content } ) ) )
 
                 except:
+                    import sys
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     logging.error(exc_value)
 
@@ -803,6 +803,7 @@ def authorized_xml_request_as_dict( uri, credentials=None, acceptable_staleness=
         if acceptable_staleness > 0:
             memcache.set( "dictjson:" + uri, zlib.compress(json.dumps( { 'content' : parsed_content, 'gmtime' : time.time() } )) )
     except:
+        import sys
         exc_type, exc_value, exc_traceback = sys.exc_info()
         logging.error(exc_value)
 
