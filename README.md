@@ -1,6 +1,8 @@
 Gapier
 ======
 
+!!!!!! NOTE: This uses a deprecated API for Google Spreadsheets and does not work any longer :( A good alternative is to just write a custom API with Google Scripts, which gives an easy access to sheets.
+
 Gapier gives you a simple HTTP API to modify Google Spreadsheets, with simple tokens as authentication.
 
 One Google Account acts as the admin of the service and can create any number of limited access tokens for different spreadsheets that the user can access.
